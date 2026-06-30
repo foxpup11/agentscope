@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	"agentscope-desktop/internal/diff"
@@ -457,7 +458,7 @@ func (a *App) ExportSession(sessionID string, format string, outputDir string) (
 					diffParts = append(diffParts, d.Patch)
 				}
 			}
-			diffContent = joinStrings(diffParts, "\n\n")
+			diffContent = strings.Join(diffParts, "\n\n")
 		}
 	}
 
@@ -507,12 +508,19 @@ func (a *App) getSessionByID(id string) (*session.Session, error) {
 		projectDir := filepath.Join(claudeDir, entry.Name())
 		jsonlFiles, _ := filepath.Glob(filepath.Join(projectDir, "*.jsonl"))
 		for _, jsonlPath := range jsonlFiles {
+			// 优化：先通过文件名快速匹配，避免读取所有文件
+			baseName := filepath.Base(jsonlPath)
+			if baseName != id+".jsonl" && baseName != id {
+				continue
+			}
+
+			// 文件名匹配后才读取文件内容
 			reader := claude.NewReader()
 			sess, err := reader.Read(jsonlPath)
 			if err != nil {
 				continue
 			}
-			// 检查会话 ID 是否匹配
+			// 检查会话 ID 是否匹配（双重验证）
 			if sess.ID == id {
 				return sess, nil
 			}
@@ -520,20 +528,4 @@ func (a *App) getSessionByID(id string) (*session.Session, error) {
 	}
 
 	return nil, fmt.Errorf("未找到会话: %s", id)
-}
-
-// joinStrings joins a slice of strings with a separator.
-func joinStrings(strs []string, sep string) string {
-	if len(strs) == 0 {
-		return ""
-	}
-	if len(strs) == 1 {
-		return strs[0]
-	}
-
-	result := strs[0]
-	for _, s := range strs[1:] {
-		result += sep + s
-	}
-	return result
 }

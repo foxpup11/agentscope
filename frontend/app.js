@@ -19,14 +19,29 @@ document.addEventListener('DOMContentLoaded', () => {
 async function silentRefreshSessions() {
     try {
         const newSessions = await window.go.main.App.GetSessions();
-        // 只在数据有变化时更新
-        if (JSON.stringify(newSessions) !== JSON.stringify(sessions)) {
+        // 使用轻量级比较：检查数量和最新会话 ID
+        if (sessionsChanged(sessions, newSessions)) {
             sessions = newSessions;
             renderSessionList(sessions);
         }
     } catch (error) {
         // 静默失败，不打扰用户
     }
+}
+
+// 检查会话列表是否发生变化
+function sessionsChanged(oldSessions, newSessions) {
+    // 数量不同，肯定变化了
+    if (oldSessions.length !== newSessions.length) {
+        return true;
+    }
+    // 空列表
+    if (oldSessions.length === 0) {
+        return false;
+    }
+    // 比较第一个和最后一个会话的 ID（假设按时间排序）
+    return oldSessions[0].id !== newSessions[0].id ||
+           oldSessions[oldSessions.length - 1].id !== newSessions[newSessions.length - 1].id;
 }
 
 // 初始化国际化
@@ -139,7 +154,9 @@ async function exportSession() {
 // 更新语言切换按钮
 function updateLangToggle() {
     const toggle = document.getElementById('langToggle');
+    if (!toggle) return;
     const knob = toggle.querySelector('.toggle-knob');
+    if (!knob) return;
     const isEn = getCurrentLang() === 'en';
 
     toggle.classList.toggle('active', isEn);
@@ -268,9 +285,9 @@ function renderSessionDetail(detail) {
     fileCount.textContent = detail.fileChanges.length;
 
     fileTableBody.innerHTML = detail.fileChanges.map((file, index) => `
-        <tr data-index="${index}" data-path="${file.path}">
+        <tr data-index="${index}" data-path="${escapeHtmlAttr(file.path)}">
             <td><span class="risk-badge risk-${(file.risk || 'review').toLowerCase()}">${t((file.risk || 'review').toLowerCase())}</span></td>
-            <td title="${file.path}">${truncatePath(file.path)}</td>
+            <td title="${escapeHtmlAttr(file.path)}">${truncatePath(file.path)}</td>
             <td><span class="change-badge change-${(file.changeType || 'modified').toLowerCase()}">${t((file.changeType || 'modified').toLowerCase())}</span></td>
             <td>${file.actionCount || 0}</td>
         </tr>
@@ -340,6 +357,16 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// HTML 属性转义（防止 XSS）
+function escapeHtmlAttr(text) {
+    return text
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
 }
 
 // 截断路径

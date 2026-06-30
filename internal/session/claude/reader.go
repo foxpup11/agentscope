@@ -65,9 +65,12 @@ func (r *Reader) Read(path string) (*session.Session, error) {
 	}
 
 	scanner := bufio.NewScanner(file)
-	scanner.Buffer(make([]byte, 10*1024*1024), 10*1024*1024) // 10MB buffer
+	// 增加缓冲区到 50MB，支持大型会话日志
+	const maxScanTokenSize = 50 * 1024 * 1024
+	scanner.Buffer(make([]byte, maxScanTokenSize), maxScanTokenSize)
 
 	seenPrompts := make(map[string]bool)
+	seenMessageUUIDs := make(map[string]bool) // 用于去重 token 统计
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -105,7 +108,9 @@ func (r *Reader) Read(path string) (*session.Session, error) {
 			}
 
 			// 提取 token 使用（从 message.usage 中获取）
-			if event.Message.Usage != nil {
+			// 使用 UUID 去重，避免重复计算同一条消息的 token
+			if event.Message.Usage != nil && event.UUID != "" && !seenMessageUUIDs[event.UUID] {
+				seenMessageUUIDs[event.UUID] = true
 				sess.TokenUsage.InputTokens += event.Message.Usage.InputTokens
 				sess.TokenUsage.OutputTokens += event.Message.Usage.OutputTokens
 			}

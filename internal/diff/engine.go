@@ -290,8 +290,9 @@ func (e *Engine) parseNumstat(output string) ([]DiffResult, error) {
 		}
 
 		// numstat 格式: "added\tremoved\tfilename"
-		// 删除的文件: "deleted\t0\tfilename"
-		// 新增的文件: "0\tdeleted\tfilename"
+		// 删除的文件: "0\t-N\tfilename" (N 是删除的行数)
+		// 新增的文件: "N\t0\tfilename" (N 是新增的行数)
+		// 二进制文件: "-\t-\tfilename"
 		parts := strings.Split(line, "\t")
 		if len(parts) < 3 {
 			continue

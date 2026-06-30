@@ -11,8 +11,8 @@
 |--------|------|------|
 | P0 - 严重 | 3 | ✅ 已修复 |
 | P1 - 高 | 4 | ✅ 已修复 |
-| P2 - 中 | 4 | 待修复 |
-| P3 - 低 | 4 | 待修复 |
+| P2 - 中 | 4 | ✅ 已修复 |
+| P3 - 低 | 4 | ✅ 已修复 |
 
 ---
 
@@ -131,7 +131,7 @@ patch, err := diffEngine.GetFilePatch(relPath)
 
 ### BUG #8: Token 统计可能重复计算
 **文件:** `internal/session/claude/reader.go:108-111`
-**状态:** 待修复
+**状态:** ✅ 已修复
 
 **问题描述:**
 如果同一条 assistant 消息的多行都包含 usage 数据，token 会被重复累加。
@@ -140,7 +140,7 @@ patch, err := diffEngine.GetFilePatch(relPath)
 
 ### BUG #9: parseNumstat 注释与实际输出不符
 **文件:** `internal/diff/engine.go:226-228`
-**状态:** 待修复
+**状态:** ✅ 已修复
 
 **问题描述:**
 注释错误，git diff numstat 的实际输出格式与注释不符。
@@ -149,7 +149,7 @@ patch, err := diffEngine.GetFilePatch(relPath)
 
 ### BUG #10: 路径插入 HTML 属性存在 XSS 风险
 **文件:** `frontend/app.js:271`
-**状态:** 待修复
+**状态:** ✅ 已修复
 
 **问题描述:**
 文件路径直接插入 `data-path` 属性，可能破坏 HTML 结构。
@@ -158,7 +158,7 @@ patch, err := diffEngine.GetFilePatch(relPath)
 
 ### BUG #11: updateLangToggle 缺少空值检查
 **文件:** `frontend/app.js:141-147`
-**状态:** 待修复
+**状态:** ✅ 已修复
 
 **问题描述:**
 如果 `langToggle` 元素不存在，调用 `.querySelector` 会抛出异常。
@@ -169,7 +169,7 @@ patch, err := diffEngine.GetFilePatch(relPath)
 
 ### BUG #12: getSessionByID 性能问题
 **文件:** `app.go:483-513`
-**状态:** 待修复
+**状态:** ✅ 已修复
 
 **问题描述:**
 每次调用都遍历所有项目目录和所有 JSONL 文件，性能问题。
@@ -178,7 +178,7 @@ patch, err := diffEngine.GetFilePatch(relPath)
 
 ### BUG #13: silentRefreshSessions 使用 JSON.stringify 比较
 **文件:** `frontend/app.js:23`
-**状态:** 待修复
+**状态:** ✅ 已修复
 
 **问题描述:**
 JSON.stringify 比较效率低，应该使用更轻量的比较方式。
@@ -187,7 +187,7 @@ JSON.stringify 比较效率低，应该使用更轻量的比较方式。
 
 ### BUG #14: joinStrings 函数可以使用 strings.Join
 **文件:** `app.go:516-529`
-**状态:** 待修复
+**状态:** ✅ 已修复
 
 **问题描述:**
 标准库 `strings.Join` 已实现相同功能，无需重复实现。
@@ -196,7 +196,7 @@ JSON.stringify 比较效率低，应该使用更轻量的比较方式。
 
 ### BUG #15: Scanner 缓冲区限制
 **文件:** `internal/session/claude/reader.go:68`
-**状态:** 待修复
+**状态:** ✅ 已修复
 
 **问题描述:**
 如果单行 JSONL 超过 10MB，会被跳过。
@@ -212,11 +212,11 @@ JSON.stringify 比较效率低，应该使用更轻量的比较方式。
 - [x] BUG #5 - findRefBeforeTime 未完成实现
 - [x] BUG #6 - GetDiffWithActions 忽略参数
 - [x] BUG #7 - GetDiffBetweenSession 顺序错误
-- [ ] BUG #8 - Token 统计重复计算
-- [ ] BUG #9 - parseNumstat 注释错误
-- [ ] BUG #10 - XSS 风险
-- [ ] BUG #11 - 空值检查缺失
-- [ ] BUG #12 - 性能问题
-- [ ] BUG #13 - JSON 比较效率低
-- [ ] BUG #14 - 重复实现
-- [ ] BUG #15 - Scanner 缓冲区限制
+- [x] BUG #8 - Token 统计重复计算
+- [x] BUG #9 - parseNumstat 注释错误
+- [x] BUG #10 - XSS 风险
+- [x] BUG #11 - 空值检查缺失
+- [x] BUG #12 - 性能问题
+- [x] BUG #13 - JSON 比较效率低
+- [x] BUG #14 - 重复实现
+- [x] BUG #15 - Scanner 缓冲区限制

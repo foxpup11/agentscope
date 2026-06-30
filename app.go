@@ -257,6 +257,11 @@ func (a *App) GetSession(id string) (*SessionDetail, error) {
 
 // GetDiff 获取指定文件的 diff
 func (a *App) GetDiff(sessionID, filePath string) (string, error) {
+	// 检查文件是否存在
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		return "", fmt.Errorf("文件不存在: %s (文件可能已被移动或删除)", filepath.Base(filePath))
+	}
+
 	// 如果文件路径是绝对路径，使用文件所在目录查找 Git 仓库
 	if filepath.IsAbs(filePath) {
 		dir := filepath.Dir(filePath)
@@ -319,7 +324,7 @@ func (a *App) GetDiff(sessionID, filePath string) (string, error) {
 
 	gitRoot, err := diff.FindGitRoot(workDir)
 	if err != nil {
-		return "", fmt.Errorf("未找到 Git 仓库: %w", err)
+		return "", fmt.Errorf("未找到 Git 仓库: %w (文件可能不在 Git 仓库中)", workDir)
 	}
 
 	diffEngine := diff.NewEngine(gitRoot)

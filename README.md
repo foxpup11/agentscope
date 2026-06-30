@@ -70,9 +70,9 @@ $ git diff --stat
 
 ### 3️⃣ 查看
 
-![preview](G:\ltch\git_learn\agentscope-desktop\docs\images\preview.png)
+![preview](docs/images/preview.png)
 
-![preview2](G:\ltch\git_learn\agentscope-desktop\docs\images\preview2.png)
+![preview2](docs/images/preview2.png)
 
 ---
 

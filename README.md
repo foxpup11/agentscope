@@ -40,7 +40,7 @@
 
 | 平台 | 文件 |
 |------|------|
-| 🪟 **Windows** | `agentscope-desktop.exe` (11MB) |
+| **Windows** | `agentscope-desktop.exe` (11MB) |
 
 ### 第二步：运行
 
@@ -56,7 +56,7 @@
 
 ---
 
-## 📸 界面预览
+## 界面预览
 
 <p align="center">
   <img src="docs/images/preview.png" alt="AgentScope Preview" width="800">
@@ -64,32 +64,32 @@
 
 ---
 
-## 🛠️ 核心功能
+## 核心功能
 
 | 功能 | 描述 |
 |------|------|
-| 📂 **会话列表** | 左侧面板展示所有 Claude Code 会话 |
-| 📊 **文件改动** | 显示每个文件的风险等级、变更类型 |
-| 🔍 **Diff 预览** | 语法高亮的代码差异查看 |
-| 🛡️ **风险评估** | 自动标注 Safe / Review / Danger |
-| 🔀 **中英文切换** | 支持中英文界面 |
-| ↔️ **可拖拽布局** | 拖动调整侧边栏宽度 |
+| **会话列表** | 左侧面板展示所有 Claude Code 会话 |
+| **文件改动** | 显示每个文件的风险等级、变更类型 |
+| **Diff 预览** | 语法高亮的代码差异查看 |
+| **风险评估** | 自动标注 Safe / Review / Danger |
+| **中英文切换** | 支持中英文界面 |
+| **可拖拽布局** | 拖动调整侧边栏宽度 |
 
 ---
 
-## 🛡️ 风险评估
+## 风险评估
 
 AgentScope 自动评估每个改动的风险等级：
 
 | 等级 | 触发条件 | 示例 |
 |------|----------|------|
-| 🟢 **Safe** | 新增文件、小改动、文档修改 | `README.md`, `docs/` |
-| 🟡 **Review** | 删除代码、修改依赖、多次编辑 | `go.mod`, `package.json` |
-| 🔴 **Danger** | 敏感文件、危险命令、大量改动 | `.env`, `rm -rf` |
+| **Safe** | 新增文件、小改动、文档修改 | `README.md`, `docs/` |
+| **Review** | 删除代码、修改依赖、多次编辑 | `go.mod`, `package.json` |
+| **Danger** | 敏感文件、危险命令、大量改动 | `.env`, `rm -rf` |
 
 ---
 
-## 🗺️ Roadmap
+## Roadmap
 
 - [x] Claude Code 会话解析
 - [x] 文件改动列表
@@ -105,7 +105,7 @@ AgentScope 自动评估每个改动的风险等级：
 
 ---
 
-## 🔧 从源码构建
+## 从源码构建
 
 ```bash
 # 前置要求
@@ -127,7 +127,7 @@ wails build
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 欢迎贡献！
 
@@ -141,15 +141,12 @@ wails build
 
 ---
 
-## 📝 License
+## License
 
 MIT License
 
 ---
 
 <p align="center">
-  <strong>如果 AgentScope 帮到了你，请给个 ⭐ Star 支持一下！</strong>
-</p>
-<p align="center">
-  <sub>Your star motivates me to keep improving 🚀</sub>
+  <strong>如果 AgentScope 帮到了你，请给个 Star 支持一下！</strong>
 </p>

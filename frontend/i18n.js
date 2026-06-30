@@ -48,6 +48,8 @@ const i18n = {
         diff: 'Diff',
         selectFile: '选择文件查看差异',
         noDiff: '暂无 diff 数据',
+        diffModeUncommitted: '未提交改动',
+        diffModeSession: '会话对比',
 
         // 状态栏
         session: '会话',
@@ -113,6 +115,8 @@ const i18n = {
         diff: 'Diff',
         selectFile: 'Select a file to view diff',
         noDiff: 'No diff data',
+        diffModeUncommitted: 'Uncommitted',
+        diffModeSession: 'Session Diff',
 
         // Status Bar
         session: 'Session',

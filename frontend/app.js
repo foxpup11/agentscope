@@ -2,6 +2,7 @@
 
 // 全局状态
 let currentSessionId = null;
+let currentDiffMode = 'uncommitted'; // 默认：未提交改动
 let sessions = [];
 
 // 初始化
@@ -317,7 +318,22 @@ async function selectFile(filePath) {
     document.getElementById('diffFileName').textContent = filePath;
 
     try {
-        const diff = await window.go.main.App.GetDiff(currentSessionId, filePath);
+        let diff = '';
+
+        if (currentDiffMode === 'session') {
+            // 会话前后对比模式：获取整个会话的 diff，然后找到指定文件
+            const diffInfo = await window.go.main.App.GetSessionDiff(currentSessionId, 'session');
+            if (diffInfo && diffInfo.diffs) {
+                const fileDiff = diffInfo.diffs.find(d => d.filePath === filePath);
+                if (fileDiff) {
+                    diff = fileDiff.patch;
+                }
+            }
+        } else {
+            // 默认模式：获取单个文件的未提交改动
+            diff = await window.go.main.App.GetDiff(currentSessionId, filePath);
+        }
+
         renderDiff(diff, filePath);
     } catch (error) {
         document.getElementById('diffView').innerHTML = `<code>${t('loadFailed')}: ${error}</code>`;
@@ -406,4 +422,28 @@ function setupEventListeners() {
             item.style.display = text.includes(keyword) ? '' : 'none';
         });
     });
+
+    // Diff 模式切换按钮
+    document.querySelectorAll('.diff-mode-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const mode = btn.getAttribute('data-mode');
+            switchDiffMode(mode);
+        });
+    });
+}
+
+// 切换 diff 对比模式
+function switchDiffMode(mode) {
+    currentDiffMode = mode;
+
+    // 更新按钮状态
+    document.querySelectorAll('.diff-mode-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-mode') === mode);
+    });
+
+    // 如果有选中的文件，重新加载 diff
+    const diffFileName = document.getElementById('diffFileName');
+    if (diffFileName && diffFileName.textContent && currentSessionId) {
+        selectFile(diffFileName.textContent);
+    }
 }

@@ -103,6 +103,10 @@
                 <div class="diff-container">
                     <div class="diff-header">
                         <h3 data-i18n="diff">Diff</h3>
+                        <div class="diff-mode-switcher">
+                            <button class="diff-mode-btn active" data-mode="uncommitted" data-i18n="diffModeUncommitted">未提交改动</button>
+                            <button class="diff-mode-btn" data-mode="session" data-i18n="diffModeSession">会话对比</button>
+                        </div>
                         <span id="diffFileName" class="diff-filename"></span>
                     </div>
                     <pre id="diffView" class="diff-view"><code data-i18n="selectFile">选择文件查看差异</code></pre>

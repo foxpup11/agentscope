@@ -63,6 +63,31 @@ type TokenUsageInfo struct {
 	OutputTokens int `json:"outputTokens"`
 }
 
+// DiffMode 对比模式
+type DiffMode string
+
+const (
+	// DiffModeUncommitted 未提交的改动
+	DiffModeUncommitted DiffMode = "uncommitted"
+	// DiffModeSession 会话前后对比
+	DiffModeSession DiffMode = "session"
+)
+
+// DiffInfo diff 详细信息
+type DiffInfo struct {
+	Mode  DiffMode       `json:"mode"`
+	Diffs []DiffFileInfo `json:"diffs"`
+}
+
+// DiffFileInfo 单个文件的 diff 信息
+type DiffFileInfo struct {
+	FilePath     string `json:"filePath"`
+	Patch        string `json:"patch"`
+	ChangeType   string `json:"changeType"`
+	AddedLines   int    `json:"addedLines"`
+	RemovedLines int    `json:"removedLines"`
+}
+
 // NewApp creates a new App application struct
 func NewApp() *App {
 	return &App{}
@@ -350,6 +375,71 @@ func (a *App) GetDiff(sessionID, filePath string) (string, error) {
 	}
 
 	return patch, nil
+}
+
+// GetSessionDiff 获取会话的 diff（支持多种对比模式）
+// mode: "uncommitted" 获取未提交的改动, "session" 获取会话前后对比
+func (a *App) GetSessionDiff(sessionID string, mode DiffMode) (*DiffInfo, error) {
+	// 获取会话数据
+	sess, err := a.getSessionByID(sessionID)
+	if err != nil {
+		return nil, fmt.Errorf("获取会话失败: %w", err)
+	}
+
+	// 确定工作目录
+	workDir := sess.CWD
+	if workDir == "" {
+		workDir, _ = os.Getwd()
+	}
+
+	// 查找 Git 仓库
+	gitRoot, err := diff.FindGitRoot(workDir)
+	if err != nil {
+		return &DiffInfo{
+			Mode:  mode,
+			Diffs: []DiffFileInfo{},
+		}, nil
+	}
+
+	diffEngine := diff.NewEngine(gitRoot)
+	var diffs []diff.DiffResult
+
+	// 根据模式获取 diff
+	switch mode {
+	case DiffModeSession:
+		// 会话前后对比
+		diffs, err = diffEngine.GetDiffBetweenSession(sess)
+	default:
+		// 默认：未提交的改动
+		diffs, err = diffEngine.GetUncommittedDiff()
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("获取 diff 失败: %w", err)
+	}
+
+	// 为每个 diff 获取完整 patch
+	diffInfos := make([]DiffFileInfo, 0, len(diffs))
+	for _, d := range diffs {
+		patch := d.Patch
+		// 如果没有 patch，尝试获取
+		if patch == "" {
+			patch, _ = diffEngine.GetFilePatch(d.FilePath)
+		}
+
+		diffInfos = append(diffInfos, DiffFileInfo{
+			FilePath:     d.FilePath,
+			Patch:        patch,
+			ChangeType:   string(d.ChangeType),
+			AddedLines:   d.AddedLines,
+			RemovedLines: d.RemovedLines,
+		})
+	}
+
+	return &DiffInfo{
+		Mode:  mode,
+		Diffs: diffInfos,
+	}, nil
 }
 
 // StartMonitoring starts watching the Claude sessions directory for changes.

@@ -1,0 +1,13 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "agentscope-desktop",
+  "outputfilename": "agentscope-desktop",
+  "frontend:install": "",
+  "frontend:build": "",
+  "frontend:dev:watcher": "",
+  "frontend:dev:serverUrl": "",
+  "author": {
+    "name": "sizhen",
+    "email": "sizhen02621@gmail.com"
+  }
+}

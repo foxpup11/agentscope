@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgentScope Desktop</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- 标题栏 -->
+        <header class="header">
+            <h1 class="title">AgentScope Desktop</h1>
+            <div class="header-actions">
+                <button id="refreshBtn" class="btn btn-secondary">刷新</button>
+            </div>
+        </header>
+
+        <!-- 主内容区 -->
+        <main class="main">
+            <!-- 左侧：会话列表 -->
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <h2>会话列表</h2>
+                    <input type="text" id="searchInput" placeholder="搜索会话..." class="search-input">
+                </div>
+                <div id="sessionList" class="session-list">
+                    <div class="loading">加载中...</div>
+                </div>
+            </aside>
+
+            <!-- 右侧：详情区 -->
+            <section class="content">
+                <!-- 文件表格 -->
+                <div class="file-table-container">
+                    <div class="table-header">
+                        <h3>文件改动</h3>
+                        <span id="fileCount" class="badge">0 个文件</span>
+                    </div>
+                    <table id="fileTable" class="file-table">
+                        <thead>
+                            <tr>
+                                <th>Risk</th>
+                                <th>File</th>
+                                <th>Change</th>
+                                <th>Ops</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fileTableBody">
+                            <tr>
+                                <td colspan="4" class="empty-state">选择一个会话查看文件改动</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Diff 视图 -->
+                <div class="diff-container">
+                    <div class="diff-header">
+                        <h3>Diff 视图</h3>
+                        <span id="diffFileName" class="diff-filename"></span>
+                    </div>
+                    <pre id="diffView" class="diff-view"><code>选择一个文件查看 diff</code></pre>
+                </div>
+            </section>
+        </main>
+
+        <!-- 状态栏 -->
+        <footer class="status-bar">
+            <span id="statusSession">会话: -</span>
+            <span id="statusBranch">分支: -</span>
+            <span id="statusTokens">Token: - in / - out</span>
+        </footer>
+    </div>
+
+    <script src="./app.js"></script>
+</body>
+</html>

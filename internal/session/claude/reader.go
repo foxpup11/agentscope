@@ -1,0 +1,287 @@
+package claude
+
+import (
+	"bufio"
+	"encoding/json"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
+
+	"agentscope-desktop/internal/session"
+)
+
+// Reader 解析 Claude Code 会话日志
+type Reader struct{}
+
+// NewReader 创建新的 Claude Code Reader
+func NewReader() *Reader {
+	return &Reader{}
+}
+
+// jsonlLine 表示 JSONL 文件中的一行
+type jsonlLine struct {
+	Type       string         `json:"type"`
+	UUID       string         `json:"uuid"`
+	ParentUUID string         `json:"parentUuid"`
+	SessionID  string         `json:"sessionId"`
+	Timestamp  string         `json:"timestamp"`
+	CWD        string         `json:"cwd"`
+	GitBranch  string         `json:"gitBranch"`
+	Message    *message       `json:"message"`
+}
+
+type message struct {
+	Role    string    `json:"role"`
+	Content any       `json:"content"` // string 或 []contentBlock
+	Model   string    `json:"model"`
+	Usage   *usage    `json:"usage"` // token 使用情况
+}
+
+type usage struct {
+	InputTokens  int `json:"input_tokens"`
+	OutputTokens int `json:"output_tokens"`
+}
+
+type contentBlock struct {
+	Type    string         `json:"type"`
+	Text    string         `json:"text,omitempty"`
+	ID      string         `json:"id,omitempty"`
+	Name    string         `json:"name,omitempty"`
+	Input   map[string]any `json:"input,omitempty"`
+	Content string         `json:"content,omitempty"` // tool_result 的结果
+}
+
+// Read 解析指定路径的 Claude Code JSONL 文件
+func (r *Reader) Read(path string) (*session.Session, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	sess := &session.Session{
+		AgentType: "claude-code",
+	}
+
+	scanner := bufio.NewScanner(file)
+	scanner.Buffer(make([]byte, 10*1024*1024), 10*1024*1024) // 10MB buffer
+
+	seenPrompts := make(map[string]bool)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		if line == "" {
+			continue
+		}
+
+		var event jsonlLine
+		if err := json.Unmarshal([]byte(line), &event); err != nil {
+			continue // 跳过解析失败的行
+		}
+
+		// 解析时间戳
+		ts, _ := time.Parse(time.RFC3339Nano, event.Timestamp)
+
+		// 提取会话元数据
+		if event.SessionID != "" && sess.ID == "" {
+			sess.ID = event.SessionID
+		}
+		if event.CWD != "" && sess.CWD == "" {
+			sess.CWD = event.CWD
+		}
+		if event.GitBranch != "" && sess.GitBranch == "" {
+			sess.GitBranch = event.GitBranch
+		}
+		if sess.StartedAt.IsZero() && !ts.IsZero() {
+			sess.StartedAt = ts
+		}
+
+		// 处理 assistant 消息（包含 tool_use）
+		if event.Type == "assistant" && event.Message != nil {
+			// 提取模型名称
+			if event.Message.Model != "" && sess.Model == "" {
+				sess.Model = event.Message.Model
+			}
+
+			// 提取 token 使用（从 message.usage 中获取）
+			if event.Message.Usage != nil {
+				sess.TokenUsage.InputTokens += event.Message.Usage.InputTokens
+				sess.TokenUsage.OutputTokens += event.Message.Usage.OutputTokens
+			}
+
+			// 解析 content blocks
+			if blocks, ok := event.Message.Content.([]any); ok {
+				for _, block := range blocks {
+					blockMap, ok := block.(map[string]any)
+					if !ok {
+						continue
+					}
+					r.parseContentBlock(sess, blockMap, ts)
+				}
+			}
+		}
+
+		// 处理 user 消息（提取用户提示）
+		if event.Type == "user" && event.Message != nil {
+			// content 可能是 string 或 []contentBlock
+			switch content := event.Message.Content.(type) {
+			case string:
+				if !seenPrompts[content] {
+					if sess.Prompt == "" {
+						sess.Prompt = content
+					}
+					seenPrompts[content] = true
+				}
+			case []any:
+				// 数组格式，提取第一个 text 类型的内容
+				for _, block := range content {
+					if blockMap, ok := block.(map[string]any); ok {
+						if blockType, _ := blockMap["type"].(string); blockType == "text" {
+							if text, _ := blockMap["text"].(string); text != "" && !seenPrompts[text] {
+								if sess.Prompt == "" {
+									sess.Prompt = text
+								}
+								seenPrompts[text] = true
+								break
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// 计算持续时间
+	if sess.StartedAt.IsZero() {
+		sess.StartedAt = time.Now()
+	}
+	sess.Duration = time.Since(sess.StartedAt)
+
+	return sess, scanner.Err()
+}
+
+func (r *Reader) parseContentBlock(sess *session.Session, blockMap map[string]any, ts time.Time) {
+	blockType, _ := blockMap["type"].(string)
+
+	switch blockType {
+	case "tool_use":
+		id, _ := blockMap["id"].(string)
+		name, _ := blockMap["name"].(string)
+		input, _ := blockMap["input"].(map[string]any)
+
+		action := session.Action{
+			ID:        id,
+			Type:      mapToolType(name),
+			FilePath:  extractFilePath(name, input),
+			Input:     input,
+			Timestamp: ts,
+		}
+
+		// 从 input 中提取描述
+		if cmd, ok := input["command"].(string); ok {
+			action.Description = cmd
+		}
+		if content, ok := input["content"].(string); ok {
+			if len(content) > 100 {
+				action.Description = content[:100] + "..."
+			} else {
+				action.Description = content
+			}
+		}
+		if content, ok := input["file_path"].(string); ok {
+			if action.Description == "" {
+				action.Description = content
+			}
+		}
+
+		sess.Actions = append(sess.Actions, action)
+
+	case "thinking":
+		// thinking block，暂时忽略
+	}
+}
+
+func mapToolType(name string) session.ActionType {
+	switch strings.ToLower(name) {
+	case "write":
+		return session.ActionWrite
+	case "edit":
+		return session.ActionEdit
+	case "bash", "execute":
+		return session.ActionBash
+	case "read":
+		return session.ActionRead
+	case "grep", "rg":
+		return session.ActionGrep
+	case "glob":
+		return session.ActionGlob
+	default:
+		return session.ActionOther
+	}
+}
+
+func extractFilePath(toolName string, input map[string]any) string {
+	switch strings.ToLower(toolName) {
+	case "write":
+		if fp, ok := input["file_path"].(string); ok {
+			return fp
+		}
+	case "edit":
+		if fp, ok := input["file_path"].(string); ok {
+			return fp
+		}
+	case "read":
+		if fp, ok := input["file_path"].(string); ok {
+			return fp
+		}
+	}
+	return ""
+}
+
+// DetectFormat 检测文件是否为 Claude Code JSONL 格式
+func (r *Reader) DetectFormat(path string) bool {
+	// 检查文件扩展名
+	ext := filepath.Ext(path)
+	if ext != ".jsonl" {
+		return false
+	}
+
+	// 检查父目录名是否像是 Claude 项目目录
+	dir := filepath.Dir(path)
+	dirName := filepath.Base(dir)
+	if !strings.HasPrefix(dirName, "-") {
+		return false
+	}
+
+	// 尝试读取前几行，检查是否包含 Claude Code 的特征字段
+	file, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	linesChecked := 0
+	for scanner.Scan() && linesChecked < 5 {
+		line := scanner.Text()
+		if line == "" {
+			continue
+		}
+		linesChecked++
+
+		var event map[string]any
+		if err := json.Unmarshal([]byte(line), &event); err != nil {
+			continue
+		}
+
+		// Claude Code 的 JSONL 通常有 sessionId, type, message 字段
+		if _, hasSession := event["sessionId"]; hasSession {
+			if _, hasType := event["type"]; hasType {
+				return true
+			}
+		}
+	}
+
+	return false
+}

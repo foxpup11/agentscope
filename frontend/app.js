@@ -10,9 +10,23 @@ document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     initI18n();
 
-    // 每 30 秒自动刷新会话列表
-    setInterval(loadSessions, 30000);
+    // 每 2 分钟后台静默刷新会话列表
+    setInterval(silentRefreshSessions, 120000);
 });
+
+// 静默刷新（不显示加载状态，不打扰用户）
+async function silentRefreshSessions() {
+    try {
+        const newSessions = await window.go.main.App.GetSessions();
+        // 只在数据有变化时更新
+        if (JSON.stringify(newSessions) !== JSON.stringify(sessions)) {
+            sessions = newSessions;
+            renderSessionList(sessions);
+        }
+    } catch (error) {
+        // 静默失败，不打扰用户
+    }
+}
 
 // 初始化国际化
 function initI18n() {

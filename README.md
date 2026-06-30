@@ -70,23 +70,9 @@ $ git diff --stat
 
 ### 3️⃣ 查看
 
-```
-┌─────────────────────────────────────────────────────────┐
-│  AgentScope Desktop v0.2.1                              │
-├──────────┬──────────────────────────────────────────────┤
-│ 会话     │  文件改动                                      │
-│          │                                              │
-│ 📁 proj1 │  🔴 Danger  src/auth.go          删除 3 个文件 │
-│  ├ abc123│  🟡 Review  src/user.go          修改 127 行  │
-│  └ def456│  🟢 Safe    README.md            修改 2 行    │
-│          │                                              │
-│ 📁 proj2 │  ┌─────────────────────────────────────────┐ │
-│  └ ghi789│  │ Diff: src/auth.go                       │ │
-│          │  │ - func oldAuth() { ... }                 │ │
-│          │  │ + func newAuth() { ... }                 │ │
-│          │  └─────────────────────────────────────────┘ │
-└──────────┴──────────────────────────────────────────────┘
-```
+![preview](G:\ltch\git_learn\agentscope-desktop\docs\images\preview.png)
+
+![preview2](G:\ltch\git_learn\agentscope-desktop\docs\images\preview2.png)
 
 ---
 

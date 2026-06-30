@@ -3,21 +3,12 @@ package diff
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
-	"syscall"
 	"time"
 
 	"agentscope-desktop/internal/session"
 )
-
-// 创建隐藏窗口的exec.Command（仅Windows）
-func newGitCommand(args ...string) *exec.Cmd {
-	cmd := exec.Command("git", args...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	return cmd
-}
 
 // Engine Git Diff 引擎
 type Engine struct {

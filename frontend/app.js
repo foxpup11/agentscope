@@ -9,6 +9,9 @@ document.addEventListener('DOMContentLoaded', () => {
     loadSessions();
     setupEventListeners();
     initI18n();
+
+    // 每 30 秒自动刷新会话列表
+    setInterval(loadSessions, 30000);
 });
 
 // 初始化国际化

@@ -61,6 +61,12 @@ agentscope.exe
 
 **就这么简单。**
 
+## 📸 界面预览
+
+<p align="center">
+  <img src="docs/images/preview.png" alt="AgentScope Preview" width="800">
+</p>
+
 ## 🛡️ 风险评估
 
 AgentScope 自动评估每个改动的风险等级：

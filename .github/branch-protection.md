@@ -37,43 +37,45 @@ Allow specified actors to bypass:
 
 **Settings → Rules → Rulesets → New ruleset → New branch ruleset**
 
-### 配置
+### 步骤 1：设置基本信息
 
 ```
-Name: main-protection
-Enforcement: Active
-Target: Branch
-Branches: main
+Ruleset Name: main-protection
+Enforcement status: Active
 ```
 
-### Rules
+### 步骤 2：添加 Bypass（你自己）
 
-```yaml
-- type: pull_request
-  parameters:
-    required_approving_review_count: 0
-    dismiss_stale_reviews_on_push: false
-    require_code_owner_review: false
+点击 **"+ Add bypass"** 按钮：
+- Role/Actor: 选择 **User**
+- 搜索并选择: **sizhen**（你的用户名）
+- Bypass mode: **Always**
 
-- type: required_status_checks
-  parameters:
-    required_status_checks: []
-    strict_required_status_checks_policy: false
+### 步骤 3：添加 Target
 
-- type: non_fast_forward
-  parameters: {}
+向下滚动找到 **"Target branches"** 部分：
+- 点击 **"Add target"**
+- 选择 **"Include by pattern"**
+- 输入: `refs/heads/main`
+- 点击 **"Add"**
 
-- type: block_force_push
-  parameters: {}
-```
+### 步骤 4：添加 Rules
 
-### Bypass Actors
+点击 **"Add rule"** 按钮，添加以下规则：
 
-```
-Actor: sizhen
-Type: User
-Bypass mode: Always
-```
+1. **Pull request**
+   - Required approvals: `0`
+   - 其他保持默认
+
+2. **Block force pushes**
+   - 勾选启用
+
+3. **Block deletions**
+   - 勾选启用
+
+### 步骤 5：保存
+
+点击页面底部的 **"Create"** 或 **"Save changes"** 按钮
 
 ---
 

@@ -13,14 +13,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // 初始化国际化
 function initI18n() {
-    document.getElementById('langSwitchBtn').textContent = t('langSwitch');
+    updateLangToggle();
     updateUI();
+}
+
+// 更新语言切换按钮
+function updateLangToggle() {
+    const toggle = document.getElementById('langToggle');
+    const knob = toggle.querySelector('.toggle-knob');
+    const isEn = getCurrentLang() === 'en';
+
+    toggle.classList.toggle('active', isEn);
+    knob.textContent = isEn ? '中' : 'EN';
 }
 
 // 更新所有 UI 文本
 function updateUI() {
-    // 更新语言切换按钮
-    document.getElementById('langSwitchBtn').textContent = t('langSwitch');
+    updateLangToggle();
 
     // 更新 data-i18n 元素
     document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -239,7 +248,7 @@ function setupEventListeners() {
     document.getElementById('refreshBtn').addEventListener('click', loadSessions);
 
     // 语言切换按钮
-    document.getElementById('langSwitchBtn').addEventListener('click', () => {
+    document.getElementById('langToggle').addEventListener('click', () => {
         switchLang();
     });
 

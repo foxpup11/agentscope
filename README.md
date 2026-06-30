@@ -1,76 +1,118 @@
-# AgentScope Desktop
-
 <p align="center">
-  <img src="build/appicon.png" width="120" alt="AgentScope Logo">
-</p>
-
-<h3 align="center">可视化 AI Agent 对你的代码做了什么</h3>
-
-<p align="center">
-  <em>像 <code>git diff</code>，但懂 Agent</em>
-</p>
-
-<p align="center">
-  <a href="#-features">功能</a> •
-  <a href="#-installation">安装</a> •
-  <a href="#-usage">使用</a> •
-  <a href="#-development">开发</a> •
-  <a href="#-contributing">贡献</a>
+  <h1 align="center">🔍 AgentScope</h1>
+  <p align="center">
+    <strong>AI Agent 改了你的代码？3 秒看清全貌。</strong>
+  </p>
+  <p align="center">
+    <img src="https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat-square&logo=go" alt="Go">
+    <img src="https://img.shields.io/badge/Wails-v2-5C2D91?style=flat-square" alt="Wails">
+    <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey?style=flat-square" alt="Platform">
+    <img src="https://img.shields.io/github/license/foxpup11/agentscope?style=flat-square" alt="License">
+  </p>
 </p>
 
 ---
 
-## 🎯 什么是 AgentScope？
+## 🎯 一句话
 
-AgentScope 是一个桌面应用，帮助开发者**可视化 AI Agent（如 Claude Code）对代码做了什么**。
+**AgentScope** 让你一眼看清 AI Agent 对代码做了什么 —— 改了哪些文件、为什么改、风险多高。
 
-当 AI Agent 修改了你的代码后，AgentScope 能够：
+## ✨ 为什么需要 AgentScope？
 
-- 📊 **展示所有文件改动** - 哪些文件被创建、修改或删除
-- 🔗 **关联 Agent 操作** - 每个改动对应哪个 tool call
-- 🛡️ **风险评估** - 自动标注安全等级（🟢 Safe / 🟡 Review / 🔴 Danger）
-- 🔍 **Diff 预览** - 语法高亮的代码差异查看
-- 📈 **会话管理** - 浏览、搜索所有历史会话
+> *"Claude Code 改了 20 个文件，我根本不知道改了啥..."*
 
-## ✨ Features
+每次用 AI Agent 写代码后，你是不是也有这种感觉？
 
-### 核心功能
+- 😵 改动太多，`git diff` 看不过来
+- 🤔 不知道每个改动对应哪个操作
+- ⚠️ 担心 Agent 误删文件或执行危险命令
 
-| 功能 | 描述 |
+**AgentScope 帮你解决这些问题。**
+
+## 🚀 开箱即用
+
+### 1. 下载
+
+前往 [Releases](https://github.com/foxpup11/agentscope/releases) 下载对应平台的可执行文件：
+
+| 平台 | 下载 |
 |------|------|
-| **会话列表** | 左侧面板展示所有 Claude Code 会话，支持搜索筛选 |
-| **文件表格** | 展示选中会话的所有文件改动，包含风险等级、变更类型、操作数 |
-| **Diff 视图** | 右侧实时预览选中文件的代码差异，带语法高亮 |
-| **风险评估** | 基于规则引擎自动评估每个改动的安全风险 |
-| **实时监控** | 监控 Claude Code 会话目录，新会话自动出现 |
+| 🪟 Windows | `agentscope-windows-amd64.exe` |
+| 🍎 macOS | `agentscope-darwin-arm64.zip` |
+| 🐧 Linux | `agentscope-linux-amd64.tar.gz` |
 
-### 风险规则
+### 2. 运行
 
-| 等级 | 触发条件 |
-|------|----------|
-| 🔴 **Danger** | 修改敏感文件（.env、secrets）、执行危险命令（rm -rf）、大量代码改动 |
-| 🟡 **Review** | 删除大量代码、多次编辑同一文件、修改依赖文件 |
-| 🟢 **Safe** | 新增文件、小改动、只修改文档 |
-
-## 📦 Installation
-
-### 下载预编译版本
-
-前往 [Releases](https://github.com/foxpup11/agentscope/releases) 下载最新版本：
-
-- **Windows**: `agentscope-desktop-windows-amd64.exe`
-- **macOS**: `agentscope-desktop-darwin-arm64.zip`
-- **Linux**: `agentscope-desktop-linux-amd64.tar.gz`
-
-### 从源码构建
-
-**前置要求**:
-
-- [Go](https://go.dev/dl/) 1.21+
-- [Wails CLI](https://wails.io/docs/gettingstarted/installation)
+双击运行，自动扫描 Claude Code 会话：
 
 ```bash
-# 克隆仓库
+# Windows
+agentscope.exe
+
+# macOS / Linux
+./agentscope
+```
+
+### 3. 查看
+
+- 左侧选择会话
+- 右侧查看文件改动
+- 点击文件查看 Diff
+
+**就这么简单。**
+
+## 📸 界面预览
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  AgentScope                                    [EN] [Refresh]  │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌──────────────┐  ┌─────────────────────────────────────────┐ │
+│  │ Sessions     │  │  File Changes                    12    │ │
+│  │ ──────────── │  │  ───────────────────────────────────── │ │
+│  │ 🔍 Search... │  │  RISK     FILE                  OPS   │ │
+│  │              │  │  ● Safe   auth/jwt.go            2     │ │
+│  │ ● fc44f5fa   │  │  ● Review middleware.go          3     │ │
+│  │   mimo-v2.5  │  │  ● Danger .env                   1     │ │
+│  │   refactor.. │  │                                     │ │
+│  │              │  │  ───────────────────────────────────── │ │
+│  │ ○ c75716f1   │  │  Diff: auth/jwt.go                  │ │
+│  │   claude-3   │  │  +import "jwt"                       │ │
+│  │   add authe..│  │  +func Validate(token) bool {        │ │
+│  │              │  │      ...                              │ │
+│  └──────────────┘  └─────────────────────────────────────────┘ │
+│                                                                 │
+│  ● Session: fc44f5fa  ● Branch: main  ● Token: 14.3K / 3.1K  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 🛡️ 风险评估
+
+AgentScope 自动评估每个改动的风险等级：
+
+| 等级 | 触发条件 | 示例 |
+|------|----------|------|
+| 🟢 **Safe** | 新增文件、小改动、文档修改 | `README.md`, `docs/` |
+| 🟡 **Review** | 删除代码、修改依赖、多次编辑 | `go.mod`, `package.json` |
+| 🔴 **Danger** | 敏感文件、危险命令、大量改动 | `.env`, `rm -rf` |
+
+## 🔧 技术栈
+
+| 层级 | 技术 |
+|------|------|
+| 桌面框架 | [Wails](https://wails.io/) v2 |
+| 后端 | Go |
+| 前端 | HTML + CSS + JS |
+| 设计风格 | Apple HIG / Material Design |
+
+## 📦 从源码构建
+
+```bash
+# 前置要求
+# - Go 1.21+
+# - Wails CLI: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
 git clone https://github.com/foxpup11/agentscope.git
 cd agentscope
 
@@ -84,126 +126,33 @@ wails dev
 wails build
 ```
 
-## 🚀 Usage
+## 🗺️ Roadmap
 
-### 快速开始
-
-1. 确保你已经使用过 Claude Code（会话数据存储在 `~/.claude/` 目录）
-2. 运行 AgentScope Desktop
-3. 在左侧选择一个会话
-4. 右侧查看文件改动和 Diff
-
-### 界面说明
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  AgentScope Desktop                              ─ □ ×      │
-├─────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌──────────────────────────────────────┐ │
-│  │ 会话列表     │  │  文件改动                             │ │
-│  │             │  │  Risk │ File    │ Change │ Ops        │ │
-│  │ ▶ session-1 │  │  [OK] │ main.go │ Modified│ 2        │ │
-│  │   session-2 │  │  [!!] │ .env    │ Deleted│ 1         │ │
-│  │   session-3 │  │                                      │ │
-│  │             │  │  Diff 视图                            │ │
-│  │ 搜索: [___] │  │  +import "fmt"                       │ │
-│  │             │  │  +func main() { ... }                │ │
-│  └─────────────┘  └──────────────────────────────────────┘ │
-├─────────────────────────────────────────────────────────────┤
-│  会话: 1dd94fa6 │ 分支: main │ Token: 29K in / 8K out     │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### 快捷键
-
-| 快捷键 | 功能 |
-|--------|------|
-| `↑` / `↓` | 在会话列表中导航 |
-| `Enter` | 选择会话 |
-| `Ctrl+F` | 搜索会话 |
-| `F5` | 刷新列表 |
-
-## 🛠️ Development
-
-### 项目结构
-
-```
-agentscope-desktop/
-├── main.go                    # Wails 入口
-├── app.go                     # 后端 API (GetSessions/GetSession/GetDiff)
-├── wails.json                 # Wails 配置
-│
-├── frontend/                  # 前端 (HTML + CSS + JS)
-│   ├── index.html
-│   ├── style.css
-│   └── app.js
-│
-├── internal/                  # 业务逻辑
-│   ├── session/
-│   │   ├── session.go         # 数据模型
-│   │   ├── discover.go        # 会话发现
-│   │   └── claude/reader.go   # Claude Code 解析器
-│   ├── diff/
-│   │   ├── engine.go          # Git Diff 引擎
-│   │   └── matcher.go         # 文件-动作匹配
-│   └── risk/
-│       └── engine.go          # 风险规则引擎
-│
-└── build/                     # 构建配置
-```
-
-### 技术栈
-
-- **后端**: Go + Wails v2
-- **前端**: Vanilla JS + CSS
-- **Git 操作**: os/exec (调用 git CLI)
-- **语法高亮**: 自定义 Diff 高亮
-
-### 开发命令
-
-```bash
-# 启动开发模式（热重载）
-wails dev
-
-# 构建生产版本
-wails build
-
-# 运行测试
-go test ./...
-
-# 格式化代码
-go fmt ./...
-```
+- [x] Claude Code 会话解析
+- [x] 文件改动列表
+- [x] Diff 语法高亮
+- [x] 风险等级评估
+- [x] 中英文切换
+- [x] 可拖拽分隔栏
+- [ ] 实时监控新会话
+- [ ] 会话导出 (HTML/Markdown)
+- [ ] 支持 Codex CLI
+- [ ] 支持 OpenCode
+- [ ] 支持 Aider
 
 ## 🤝 Contributing
 
-欢迎贡献！请查看 [CONTRIBUTING.md](CONTRIBUTING.md) 了解详情。
-
-### 如何贡献
-
-1. Fork 本仓库
-2. 创建特性分支 (`git checkout -b feature/amazing-feature`)
-3. 提交更改 (`git commit -m 'Add amazing feature'`)
-4. 推送到分支 (`git push origin feature/amazing-feature`)
-5. 创建 Pull Request
+欢迎贡献！Fork → Branch → PR。
 
 ## 📝 License
 
-本项目采用 MIT License - 查看 [LICENSE](LICENSE) 文件了解详情。
-
-## 🙏 Acknowledgments
-
-- [Wails](https://wails.io/) - Go 桌面应用框架
-- [Bubble Tea](https://github.com/charmbracelet/bubbletea) - TUI 框架（灵感来源）
-- [Claude Code](https://claude.ai/) - AI 编程助手
-
-## 📧 Contact
-
-- **Issues**: [GitHub Issues](https://github.com/foxpup11/agentscope/issues)
-- **Email**: sizhen02621@gmail.com
+MIT
 
 ---
 
 <p align="center">
-  如果这个项目对你有帮助，请给个 ⭐ Star 支持一下！
+  <strong>如果 AgentScope 帮到了你，请给个 ⭐ Star 支持一下！</strong>
+</p>
+<p align="center">
+  <sub>Your star motivates me to keep improving 🚀</sub>
 </p>

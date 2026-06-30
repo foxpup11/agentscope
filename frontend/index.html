@@ -11,10 +11,12 @@
         <!-- Header -->
         <header class="header">
             <div class="title-section">
-                <h1 class="title" data-i18n="appTitle">AgentScope</h1>
+                <h1 class="title">AgentScope</h1>
             </div>
             <div class="header-actions">
-                <button id="langSwitchBtn" class="btn btn-lang">EN</button>
+                <div id="langToggle" class="lang-toggle" title="切换语言">
+                    <div class="toggle-knob">EN</div>
+                </div>
                 <button id="refreshBtn" class="btn">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M23 4v6h-6M1 20v-6h6"/>
@@ -28,7 +30,7 @@
         <!-- Main -->
         <main class="main">
             <!-- Sidebar -->
-            <aside class="sidebar">
+            <aside id="sidebar" class="sidebar">
                 <div class="sidebar-header">
                     <h2 data-i18n="sessions">会话</h2>
                     <div class="search-wrapper">
@@ -43,6 +45,9 @@
                     <div class="loading" data-i18n="loading">加载中...</div>
                 </div>
             </aside>
+
+            <!-- Resizer -->
+            <div id="resizer" class="resizer"></div>
 
             <!-- Content -->
             <section class="content">
@@ -64,7 +69,7 @@
                         <tbody id="fileTableBody">
                             <tr>
                                 <td colspan="4" class="empty-state">
-                                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                                         <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                     </svg>
                                     <p data-i18n="selectSession">选择会话查看改动</p>
@@ -95,5 +100,6 @@
 
     <script src="./i18n.js"></script>
     <script src="./app.js"></script>
+    <script src="./resizer.js"></script>
 </body>
 </html>

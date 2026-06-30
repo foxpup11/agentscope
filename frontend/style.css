@@ -352,6 +352,71 @@ body {
     padding: 8px;
 }
 
+/* Session Group */
+.session-group {
+    margin-bottom: 8px;
+}
+
+.group-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: var(--transition);
+    user-select: none;
+}
+
+.group-header:hover {
+    background: var(--border);
+}
+
+.group-icon {
+    transition: transform 0.2s ease;
+    color: var(--text-secondary);
+}
+
+.session-group.collapsed .group-icon {
+    transform: rotate(-90deg);
+}
+
+.group-name {
+    flex: 1;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.group-count {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 8px;
+    background: var(--bg-primary);
+    border-radius: 10px;
+    color: var(--text-tertiary);
+}
+
+.group-sessions {
+    padding-left: 8px;
+    overflow: hidden;
+    transition: max-height 0.3s ease, opacity 0.2s ease;
+    max-height: 2000px;
+    opacity: 1;
+}
+
+.session-group.collapsed .group-sessions {
+    max-height: 0;
+    opacity: 0;
+    padding: 0;
+}
+
 /* Session Item */
 .session-item {
     padding: 14px 16px;

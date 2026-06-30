@@ -220,7 +220,7 @@ async function loadSessions() {
     }
 }
 
-// 渲染会话列表
+// 渲染会话列表（按项目分组）
 function renderSessionList(sessionData) {
     const sessionList = document.getElementById('sessionList');
 
@@ -236,14 +236,45 @@ function renderSessionList(sessionData) {
         return;
     }
 
-    sessionList.innerHTML = sessionData.map(session => `
-        <div class="session-item" data-id="${session.id}">
-            <div class="session-id">${session.id.substring(0, 8)}</div>
-            <div class="session-model">${session.model || '-'}</div>
-            <div class="session-prompt">${session.prompt || '-'}</div>
-            <div class="session-meta">
-                <span>${t('files')} ${session.fileCount}</span>
-                <span>${t('actions')} ${session.actionCount}</span>
+    // 按项目分组
+    const groups = {};
+    sessionData.forEach(session => {
+        const project = session.projectName || session.projectDir || 'unknown';
+        if (!groups[project]) {
+            groups[project] = {
+                dir: session.projectDir,
+                name: project,
+                sessions: []
+            };
+        }
+        groups[project].sessions.push(session);
+    });
+
+    // 将项目按会话数量排序（多的在前）
+    const sortedGroups = Object.values(groups).sort((a, b) => b.sessions.length - a.sessions.length);
+
+    // 渲染分组
+    sessionList.innerHTML = sortedGroups.map((group, groupIndex) => `
+        <div class="session-group" data-group="${groupIndex}">
+            <div class="group-header" onclick="toggleGroup(${groupIndex})">
+                <svg class="group-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M6 9l6 6 6-6"/>
+                </svg>
+                <span class="group-name">${escapeHtml(group.name)}</span>
+                <span class="group-count">${group.sessions.length}</span>
+            </div>
+            <div class="group-sessions">
+                ${group.sessions.map(session => `
+                    <div class="session-item" data-id="${session.id}">
+                        <div class="session-id">${session.id.substring(0, 8)}</div>
+                        <div class="session-model">${session.model || '-'}</div>
+                        <div class="session-prompt">${session.prompt || '-'}</div>
+                        <div class="session-meta">
+                            <span>${t('files')} ${session.fileCount}</span>
+                            <span>${t('actions')} ${session.actionCount}</span>
+                        </div>
+                    </div>
+                `).join('')}
             </div>
         </div>
     `).join('');
@@ -255,6 +286,21 @@ function renderSessionList(sessionData) {
             selectSession(sessionId);
         });
     });
+
+    // 默认折叠会话数少的项目（少于3个会话的折叠）
+    sortedGroups.forEach((group, index) => {
+        if (group.sessions.length < 3) {
+            toggleGroup(index);
+        }
+    });
+}
+
+// 切换分组展开/折叠
+function toggleGroup(groupIndex) {
+    const group = document.querySelector(`.session-group[data-group="${groupIndex}"]`);
+    if (group) {
+        group.classList.toggle('collapsed');
+    }
 }
 
 // 选择会话

@@ -29,13 +29,15 @@ type App struct {
 
 // SessionInfo 会话简要信息（用于列表展示）
 type SessionInfo struct {
-	ID         string    `json:"id"`
-	Model      string    `json:"model"`
-	Prompt     string    `json:"prompt"`
-	Branch     string    `json:"branch"`
-	StartedAt  time.Time `json:"startedAt"`
-	FileCount  int       `json:"fileCount"`
-	ActionCount int      `json:"actionCount"`
+	ID          string    `json:"id"`
+	Model       string    `json:"model"`
+	Prompt      string    `json:"prompt"`
+	Branch      string    `json:"branch"`
+	StartedAt   time.Time `json:"startedAt"`
+	FileCount   int       `json:"fileCount"`
+	ActionCount int       `json:"actionCount"`
+	ProjectDir  string    `json:"projectDir"`  // 项目目录名（用于分组）
+	ProjectName string    `json:"projectName"` // 项目显示名称
 }
 
 // FileChangeInfo 文件改动信息（用于表格展示）
@@ -149,6 +151,8 @@ func (a *App) GetSessions() ([]SessionInfo, error) {
 				StartedAt:   sess.StartedAt,
 				FileCount:   len(sess.FileChanges),
 				ActionCount: len(sess.Actions),
+				ProjectDir:  entry.Name(),
+				ProjectName: formatProjectName(entry.Name()),
 			})
 		}
 	}
@@ -159,6 +163,27 @@ func (a *App) GetSessions() ([]SessionInfo, error) {
 	})
 
 	return sessions, nil
+}
+
+// formatProjectName 将项目目录名转换为可读的项目名称
+// 例如: "-g-ltch-git-learn-agentscope-desktop" -> "agentscope-desktop"
+func formatProjectName(dirName string) string {
+	// 去掉开头的连字符
+	name := strings.TrimPrefix(dirName, "-")
+
+	// 取最后一个路径段作为项目名
+	parts := strings.Split(name, "-")
+	if len(parts) > 0 {
+		// 尝试找到有意义的项目名（通常是最后几个段）
+		// 对于类似 "g-ltch-git-learn-agentscope-desktop" 的格式
+		// 取最后两个段组合
+		if len(parts) >= 2 {
+			return parts[len(parts)-2] + "-" + parts[len(parts)-1]
+		}
+		return parts[len(parts)-1]
+	}
+
+	return name
 }
 
 // GetSession 获取单个会话详情

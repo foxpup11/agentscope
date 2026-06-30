@@ -17,7 +17,7 @@ func main() {
 
 	// Create application with options
 	err := wails.Run(&options.App{
-		Title:  "AgentScope Desktop",
+		Title:  "AgentScope Desktop v0.2.1",
 		Width:  1200,
 		Height: 800,
 		AssetServer: &assetserver.Options{

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/Logo.png" alt="AgentScope Logo" width="120">
+  <img src="docs/images/Logo.png" alt="AgentScope Logo" width="280">
 </p>
 
 <h1 align="center">AgentScope</h1>

@@ -1,13 +1,13 @@
 <p align="center">
   <h1 align="center">🔍 AgentScope</h1>
   <p align="center">
-    <strong>AI Agent 改了你的代码？3 秒看清全貌。</strong>
+    <strong>Claude Code 个人效能工作台 — Token 使用一目了然。</strong>
   </p>
   <p align="center">
     <img src="https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat-square&logo=go" alt="Go">
     <img src="https://img.shields.io/badge/Wails-v2-5C2D91?style=flat-square" alt="Wails">
     <img src="https://img.shields.io/badge/Platform-Windows-lightgrey?style=flat-square" alt="Platform">
-    <img src="https://img.shields.io/badge/Version-v0.2.1-blue?style=flat-square" alt="Version">
+    <img src="https://img.shields.io/badge/Version-v0.3.0-blue?style=flat-square" alt="Version">
     <img src="https://img.shields.io/github/license/foxpup11/agentscope?style=flat-square" alt="License">
     <img src="https://img.shields.io/github/stars/foxpup11/agentscope?style=social" alt="Stars">
   </p>
@@ -16,7 +16,7 @@
 ---
 
 <p align="center">
-  <strong>🚀 让 AI Agent 的每一次修改，都在你的掌控之中</strong>
+  <strong>🚀 让 Claude Code 的每一次 Token 消耗，都在你的掌控之中</strong>
 </p>
 
 ---
@@ -36,8 +36,9 @@ $ git diff --stat
  src/middleware/cors.go |  56 +++++----
  tests/auth_test.go    |  34 +++--
  ...
- 
+
 # 20 个文件被修改，但我完全不知道改了什么！
+# 而且这次到底花了多少 Token？上个月用了多少钱？
 ```
 
 **别慌，AgentScope 帮你看清一切。**
@@ -46,15 +47,15 @@ $ git diff --stat
 
 ## ✨ AgentScope 是什么？
 
-一个**轻量级桌面应用**，帮你：
+一个**轻量级桌面应用**，专为 Claude Code 用户打造的**个人效能工作台**：
 
 | 问题 | AgentScope 的解决方案 |
 |------|----------------------|
-| 😵 改动太多看不过来 | 📊 **一目了然的文件列表** |
-| 🤔 不知道改了什么 | 🔍 **语法高亮的 Diff 预览** |
-| ⚠️ 担心误删文件 | 🚨 **自动风险评估 (Safe/Review/Danger)** |
-| 📁 多项目管理混乱 | 📂 **按项目智能分组** |
-| 🔔 新会话没及时发现 | 👁️ **实时监控** |
+| 😵 改动太多看不过来 | 📊 **一目了然的文件列表 + 风险评估** |
+| 💸 Token 花了多少不知道 | 💰 **Token 仪表盘 + 趋势图 + 项目/模型分析** |
+| 🤔 上次会话做了什么 | 🔍 **全文搜索 + 标签系统 + 收藏功能** |
+| 📁 多项目管理混乱 | 📂 **按项目智能分组 + 批量操作** |
+| 📊 无法优化使用习惯 | 📈 **数据驱动的 Token 使用洞察** |
 
 ---
 
@@ -73,6 +74,53 @@ $ git diff --stat
 ![preview](docs/images/preview.png)
 
 ![preview2](docs/images/preview2.png)
+
+---
+
+## 💰 Token 仪表盘（v0.3 新增）
+
+**一眼看清你的 Claude Code 费用全貌！**
+
+```
+┌──────────────────────────────────────────────────┐
+│  💰 Token 概览                                    │
+│                                                   │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌─────┐ │
+│  │ 今日Token │ │ 本月Token │ │ 上月Token │ │累计 │ │
+│  │  123.4K  │ │  2.1M    │ │  5.8M    │ │15.2M│ │
+│  │          │ │ -63%较上月│ │          │ │     │ │
+│  └──────────┘ └──────────┘ └──────────┘ └─────┘ │
+│                                                   │
+│  Token 趋势（近30天）                              │
+│  ▓▓░░▓▓▓░░▓▓▓▓▓░░  (堆叠柱状图)                   │
+│                                                   │
+│  项目 Token 分布          模型分布                  │
+│  agent.. │ 23│ 800K│200K│ 1M   sonnet-4-6│89│ 7M  │
+└──────────────────────────────────────────────────┘
+```
+
+| 功能 | 描述 |
+|------|------|
+| 📊 **5 张概览卡片** | 今日 / 本月 / 上月 / 累计 Token + 总会话数 |
+| 📈 **30 天趋势图** | Input（蓝）+ Output（绿）堆叠柱状图 |
+| 🏢 **项目维度分析** | 按项目分组统计 Token 消耗 |
+| 🤖 **模型维度分析** | 识别 Claude vs MiMo 使用占比 |
+| 💱 **双币种支持** | USD（Claude）+ CNY（MiMo）自动换算 |
+
+---
+
+## 🔍 会话管理（v0.3 增强）
+
+**不止看 Diff，更要管好你的会话！**
+
+| 功能 | 描述 |
+|------|------|
+| 🔍 **全文搜索** | 搜索 Prompt、模型、分支、标签，多字段高级筛选 |
+| 🏷️ **标签系统** | 手动打标签 + 17 条自动识别规则 |
+| ⭐ **会话收藏** | 一键收藏重要会话，快捷筛选 |
+| 📦 **批量操作** | 批量收藏、导出、删除，带确认对话框 |
+| 📂 **项目分组** | 按项目自动分组，折叠/展开控制 |
+| 🔔 **实时监控** | 2 分钟自动刷新，新会话即时发现 |
 
 ---
 
@@ -101,15 +149,27 @@ AgentScope 内置智能风险评估，自动识别危险操作：
 <tr>
 <td width="50%">
 
-### 📊 智能会话管理
+### 💰 Token 分析
 
-- 按项目自动分组
-- 折叠/展开控制
-- 实时监控新会话
-- 2 分钟自动刷新
+- 5 张概览卡片
+- 30 天趋势图
+- 项目/模型维度分析
+- 双币种自动换算
 
 </td>
 <td width="50%">
+
+### 🔍 会话管理
+
+- 全文搜索 + 高级筛选
+- 标签系统（手动 + 自动）
+- 会话收藏 + 批量操作
+- 按项目智能分组
+
+</td>
+</tr>
+<tr>
+<td>
 
 ### 🔍 Diff 预览
 
@@ -119,8 +179,6 @@ AgentScope 内置智能风险评估，自动识别危险操作：
 - 单文件详细 Diff
 
 </td>
-</tr>
-<tr>
 <td>
 
 ### ⚙️ 灵活配置
@@ -131,6 +189,8 @@ AgentScope 内置智能风险评估，自动识别危险操作：
 - 规则启用/禁用
 
 </td>
+</tr>
+<tr>
 <td>
 
 ### 📤 导出报告
@@ -141,14 +201,17 @@ AgentScope 内置智能风险评估，自动识别危险操作：
 - Token 使用统计
 
 </td>
+<td>
+
+### 🌍 国际化
+
+- 中文 / English 一键切换
+- 18+ 个翻译键
+- 完整本地化 UI
+
+</td>
 </tr>
 </table>
-
----
-
-## 🌍 国际化
-
-支持**中文**和**English**一键切换。
 
 ---
 
@@ -195,14 +258,21 @@ wails build -platform windows/amd64 -o agentscope-desktop.exe
 - [x] 深色主题
 - [x] 自定义风险规则
 - [x] 项目分组
+- [x] **💰 Token 仪表盘**（5 卡片 + 趋势图 + 双表格）
+- [x] **📈 Token 趋势图**（30 天堆叠柱状图，Input/Output 双色）
+- [x] **🔍 全文搜索**（多字段高级搜索）
+- [x] **🏷️ 标签系统**（手动 + 17 条自动识别规则）
+- [x] **⭐ 会话收藏**（收藏/取消收藏，快捷筛选）
+- [x] **📦 批量操作**（批量收藏/导出/删除）
 
 ### 🔜 计划中
 
-- [ ] 支持 Codex CLI
-- [ ] 支持 OpenCode
-- [ ] 支持 Aider
-- [ ] 会话对比分析
-- [ ] 团队协作模式
+- [ ] 🧠 Memory 可视化管理
+- [ ] 📝 CLAUDE.md 编辑器
+- [ ] ⚙️ Hooks / MCP 配置 GUI
+- [ ] ✨ 智能提交信息生成
+- [ ] 📋 提示词模板库
+- [ ] 📊 使用洞察报告
 
 ---
 

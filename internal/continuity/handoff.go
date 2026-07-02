@@ -102,7 +102,7 @@ func (g *HandoffGenerator) GenerateMarkdown(summary *HandoffSummary) string {
 		for i, decision := range summary.KeyDecisions {
 			sb.WriteString(fmt.Sprintf("%d. **%s**\n", i+1, decision.Description))
 			if decision.Context != "" {
-				sb.WriteString(fmt.Sprintf("   - 背景: %s\n", truncateStr(decision.Context, 150)))
+				sb.WriteString(fmt.Sprintf("   - 背景: %s\n", truncateStr(decision.Context, 400)))
 			}
 			sb.WriteString("\n")
 		}

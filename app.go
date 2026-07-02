@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -1359,6 +1360,34 @@ func (a *App) SearchKnowledgeDocuments(query string, types []string, projects []
 	return result, nil
 }
 
+// OpenFileLocation 打开文件所在位置
+func (a *App) OpenFileLocation(filePath string) error {
+	log.Printf("OpenFileLocation: 收到文件路径: %q", filePath)
+
+	// 验证文件路径
+	if filePath == "" {
+		log.Printf("OpenFileLocation: 文件路径为空")
+		return fmt.Errorf("文件路径不能为空")
+	}
+
+	// 检查文件是否存在
+	info, err := os.Stat(filePath)
+	if err != nil {
+		log.Printf("OpenFileLocation: 文件不存在: %v, 路径: %q", err, filePath)
+		return fmt.Errorf("文件不存在: %w", err)
+	}
+
+	// 如果是文件，获取其所在目录
+	dir := filePath
+	if !info.IsDir() {
+		dir = filepath.Dir(filePath)
+	}
+
+	log.Printf("OpenFileLocation: 打开目录: %q", dir)
+	// 跨平台打开文件夹
+	return openDirectory(dir)
+}
+
 // ============================================
 // CLAUDE.md Editor APIs
 // ============================================
@@ -1712,4 +1741,17 @@ func (a *App) GenerateContinuityPrompt(project string, sessionCount int) (string
 
 	prompt, _, err := a.continuity.GenerateHandoffPrompt(project, sessionCount)
 	return prompt, err
+}
+
+// openDirectory 打开指定目录（跨平台）
+func openDirectory(dir string) error {
+	log.Printf("openDirectory: 打开目录: %q", dir)
+	// 使用 cmd /c start 打开文件夹，比直接调用 explorer.exe 更可靠
+	cmd := exec.Command("cmd", "/c", "start", "", dir)
+	err := cmd.Start()
+	if err != nil {
+		log.Printf("openDirectory: 打开目录失败: %v", err)
+		return fmt.Errorf("打开目录失败: %w", err)
+	}
+	return nil
 }

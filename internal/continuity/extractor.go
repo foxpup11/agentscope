@@ -1,6 +1,7 @@
 package continuity
 
 import (
+	"fmt"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -238,10 +239,23 @@ func groupActionsByTimeWindow(actions []session.Action, window time.Duration) []
 func (e *Extractor) inferTaskDescriptionFromGroup(group []session.Action, sess *session.Session) string {
 	// 优先使用session.Prompt（如果时间匹配）
 	if sess.Prompt != "" {
-		lines := strings.SplitN(sess.Prompt, "\n", 2)
-		desc := strings.TrimSpace(lines[0])
-		desc = truncateUTF8(desc, 200)
-		return desc
+		// 提取前3行作为描述
+		lines := strings.SplitN(sess.Prompt, "\n", 4)
+		var promptLines []string
+		for _, line := range lines {
+			trimmed := strings.TrimSpace(line)
+			if trimmed != "" {
+				promptLines = append(promptLines, trimmed)
+			}
+			if len(promptLines) >= 3 {
+				break
+			}
+		}
+		if len(promptLines) > 0 {
+			desc := strings.Join(promptLines, " ")
+			desc = truncateUTF8(desc, 400)
+			return desc
+		}
 	}
 
 	// 从action的Description中提取
@@ -249,7 +263,7 @@ func (e *Extractor) inferTaskDescriptionFromGroup(group []session.Action, sess *
 		if action.Description != "" {
 			desc := strings.TrimSpace(action.Description)
 			if len(desc) > 10 {
-				desc = truncateUTF8(desc, 200)
+				desc = truncateUTF8(desc, 400)
 				return desc
 			}
 		}
@@ -269,7 +283,7 @@ func (e *Extractor) inferTaskDescriptionFromGroup(group []session.Action, sess *
 			for _, sentence := range sentences {
 				sentence = strings.TrimSpace(sentence)
 				if len(sentence) > 10 && containsFilePath(sentence) {
-					sentence = truncateUTF8(sentence, 200)
+					sentence = truncateUTF8(sentence, 400)
 					return sentence
 				}
 			}
@@ -285,10 +299,23 @@ func (e *Extractor) inferTaskDescriptionFromGroup(group []session.Action, sess *
 			if block.Type == session.ContentTypeText && block.Text != "" {
 				text := strings.TrimSpace(block.Text)
 				if len(text) > 10 {
-					lines := strings.SplitN(text, "\n", 2)
-					desc := strings.TrimSpace(lines[0])
-					desc = truncateUTF8(desc, 200)
-					return desc
+					// 提取前3行作为描述
+					lines := strings.SplitN(text, "\n", 4)
+					var promptLines []string
+					for _, line := range lines {
+						trimmed := strings.TrimSpace(line)
+						if trimmed != "" {
+							promptLines = append(promptLines, trimmed)
+						}
+						if len(promptLines) >= 3 {
+							break
+						}
+					}
+					if len(promptLines) > 0 {
+						desc := strings.Join(promptLines, " ")
+						desc = truncateUTF8(desc, 400)
+						return desc
+					}
 				}
 			}
 		}
@@ -301,11 +328,23 @@ func (e *Extractor) inferTaskDescriptionFromGroup(group []session.Action, sess *
 func (e *Extractor) inferTaskDescription(sess *session.Session) string {
 	// 优先使用用户 prompt
 	if sess.Prompt != "" {
-		// 截取第一行作为描述
-		lines := strings.SplitN(sess.Prompt, "\n", 2)
-		desc := strings.TrimSpace(lines[0])
-		desc = truncateUTF8(desc, 200)
-		return desc
+		// 提取前3行作为描述
+		lines := strings.SplitN(sess.Prompt, "\n", 4)
+		var promptLines []string
+		for _, line := range lines {
+			trimmed := strings.TrimSpace(line)
+			if trimmed != "" {
+				promptLines = append(promptLines, trimmed)
+			}
+			if len(promptLines) >= 3 {
+				break
+			}
+		}
+		if len(promptLines) > 0 {
+			desc := strings.Join(promptLines, " ")
+			desc = truncateUTF8(desc, 400)
+			return desc
+		}
 	}
 
 	// 回退到第一个有内容的用户消息
@@ -317,10 +356,23 @@ func (e *Extractor) inferTaskDescription(sess *session.Session) string {
 			if block.Type == session.ContentTypeText && block.Text != "" {
 				text := strings.TrimSpace(block.Text)
 				if len(text) > 10 {
-					lines := strings.SplitN(text, "\n", 2)
-					desc := strings.TrimSpace(lines[0])
-					desc = truncateUTF8(desc, 200)
-					return desc
+					// 提取前3行作为描述
+					lines := strings.SplitN(text, "\n", 4)
+					var promptLines []string
+					for _, line := range lines {
+						trimmed := strings.TrimSpace(line)
+						if trimmed != "" {
+							promptLines = append(promptLines, trimmed)
+						}
+						if len(promptLines) >= 3 {
+							break
+						}
+					}
+					if len(promptLines) > 0 {
+						desc := strings.Join(promptLines, " ")
+						desc = truncateUTF8(desc, 400)
+						return desc
+					}
 				}
 			}
 		}
@@ -401,13 +453,13 @@ func extractFinalDecision(text string) string {
 
 	for _, s := range sentences {
 		s = strings.TrimSpace(s)
-		if len(s) < 10 || len(s) > 150 {
+		if len(s) < 10 || len(s) > 300 {
 			continue
 		}
 		lower := strings.ToLower(s)
 		for _, kw := range finalKeywords {
 			if strings.Contains(lower, strings.ToLower(kw)) {
-				return truncateUTF8(s, 150)
+				return truncateUTF8(s, 300)
 			}
 		}
 	}
@@ -415,7 +467,7 @@ func extractFinalDecision(text string) string {
 	// 优先级2：包含决策关键词且长度适中的句子
 	for _, s := range sentences {
 		s = strings.TrimSpace(s)
-		if len(s) < 15 || len(s) > 150 {
+		if len(s) < 15 || len(s) > 300 {
 			continue
 		}
 		lower := strings.ToLower(s)
@@ -423,7 +475,7 @@ func extractFinalDecision(text string) string {
 			if strings.Contains(lower, strings.ToLower(kw)) {
 				// 排除包含代码、markdown格式的内容
 				if !containsCodeOrMarkdown(s) {
-					return truncateUTF8(s, 150)
+					return truncateUTF8(s, 300)
 				}
 			}
 		}
@@ -667,7 +719,7 @@ func extractRelevantSentences(text string, keywords []string) []string {
 		lower := strings.ToLower(s)
 		for _, kw := range keywords {
 			if strings.Contains(lower, strings.ToLower(kw)) {
-				s = truncateUTF8(s, 200)
+				s = truncateUTF8(s, 400)
 				relevant = append(relevant, s)
 				break
 			}
@@ -736,7 +788,7 @@ func extractTODODescription(text string) string {
 		// 显式TODO标记
 		if strings.Contains(lower, "todo") || strings.Contains(lower, "fixme") || strings.Contains(lower, "hack") {
 			line = strings.TrimSpace(line)
-			line = truncateUTF8(line, 200)
+			line = truncateUTF8(line, 400)
 			return line
 		}
 
@@ -750,7 +802,7 @@ func extractTODODescription(text string) string {
 		for _, p := range chinesePatterns {
 			if strings.Contains(lower, p) {
 				line = strings.TrimSpace(line)
-				line = truncateUTF8(line, 200)
+				line = truncateUTF8(line, 400)
 				return line
 			}
 		}
@@ -763,7 +815,7 @@ func extractTODODescription(text string) string {
 		for _, p := range englishPatterns {
 			if strings.Contains(lower, p) {
 				line = strings.TrimSpace(line)
-				line = truncateUTF8(line, 200)
+				line = truncateUTF8(line, 400)
 				return line
 			}
 		}
@@ -788,7 +840,7 @@ func extractPromiseDescription(text string) string {
 		lower := strings.ToLower(strings.TrimSpace(line))
 		if strings.Contains(lower, "下一步") || strings.Contains(lower, "接下来") || strings.Contains(lower, "then i") || strings.Contains(lower, "next step") {
 			line = strings.TrimSpace(line)
-			line = truncateUTF8(line, 200)
+			line = truncateUTF8(line, 400)
 			return line
 		}
 	}
@@ -1055,44 +1107,286 @@ func FilterByTimeRange(sessions []*session.Session, since time.Time) []*session.
 	return filtered
 }
 
-// ExtractSessionSummary 从会话中提取核心内容摘要
+// ExtractSessionSummary 从会话中提取核心内容摘要（增强版）
+// 提取用户需求、AI执行操作、文件变更、技术决策、完成状态等多维度信息
 func ExtractSessionSummary(sessions []*session.Session) string {
 	if len(sessions) == 0 {
 		return ""
 	}
 
-	var summaries []string
+	var sessionSummaries []string
 
 	for _, sess := range sessions {
-		// 从prompt提取核心需求
-		if sess.Prompt != "" {
-			// 取第一行作为核心需求
-			lines := strings.SplitN(sess.Prompt, "\n", 2)
-			prompt := strings.TrimSpace(lines[0])
-			if len(prompt) > 10 {
-				summaries = append(summaries, truncateUTF8(prompt, 100))
+		summary := extractSingleSessionSummary(sess)
+		if summary != "" {
+			sessionSummaries = append(sessionSummaries, summary)
+		}
+	}
+
+	if len(sessionSummaries) == 0 {
+		return "暂无会话摘要"
+	}
+
+	// 限制会话数量
+	if len(sessionSummaries) > 5 {
+		sessionSummaries = sessionSummaries[:5]
+	}
+
+	return strings.Join(sessionSummaries, "\n\n")
+}
+
+// extractSingleSessionSummary 提取单个会话的完整摘要
+func extractSingleSessionSummary(sess *session.Session) string {
+	var parts []string
+
+	// 1. 提取核心任务描述
+	taskDesc := extractTaskDescription(sess)
+	if taskDesc != "" {
+		parts = append(parts, "**任务**: "+taskDesc)
+	}
+
+	// 2. 提取完成状态
+	completionStatus := extractCompletionStatus(sess)
+	if completionStatus != "" {
+		parts = append(parts, "**状态**: "+completionStatus)
+	}
+
+	// 3. 提取文件变更摘要
+	fileSummary := extractFileChangeSummary(sess)
+	if fileSummary != "" {
+		parts = append(parts, "**文件变更**: "+fileSummary)
+	}
+
+	// 4. 提取技术决策
+	decision := extractKeyDecision(sess)
+	if decision != "" {
+		parts = append(parts, "**技术决策**: "+decision)
+	}
+
+	// 5. 提取遇到的问题
+	issue := extractKeyIssue(sess)
+	if issue != "" {
+		parts = append(parts, "**遇到问题**: "+issue)
+	}
+
+	if len(parts) == 0 {
+		return ""
+	}
+
+	return strings.Join(parts, "\n")
+}
+
+// extractTaskDescription 提取任务描述（从用户 prompt 和消息中）
+func extractTaskDescription(sess *session.Session) string {
+	// 优先使用 sess.Prompt
+	if sess.Prompt != "" {
+		desc := truncateUTF8(strings.TrimSpace(sess.Prompt), 200)
+		if len(desc) > 10 {
+			return desc
+		}
+	}
+
+	// 从用户消息中提取
+	for _, msg := range sess.Messages {
+		if msg.Type != session.MessageTypeUser {
+			continue
+		}
+		for _, block := range msg.Content {
+			if block.Type != session.ContentTypeText && block.Type != session.ContentTypeToolResult {
+				continue
+			}
+			text := strings.TrimSpace(block.Text)
+			if text == "" || len(text) < 10 {
+				continue
+			}
+			// 跳过系统消息
+			if strings.HasPrefix(text, "[") {
+				continue
+			}
+			// 提取第一行作为任务描述
+			lines := strings.SplitN(text, "\n", 2)
+			desc := strings.TrimSpace(lines[0])
+			if len(desc) > 10 {
+				return truncateUTF8(desc, 200)
 			}
 		}
 	}
 
-	if len(summaries) == 0 {
-		return "暂无会话摘要"
-	}
+	return ""
+}
 
-	// 合并并去重
-	seen := make(map[string]bool)
-	var result []string
-	for _, s := range summaries {
-		if !seen[s] {
-			seen[s] = true
-			result = append(result, s)
+// extractCompletionStatus 提取任务完成状态
+func extractCompletionStatus(sess *session.Session) string {
+	// 从 assistant 最后几条消息中提取完成状态
+	var assistantMsgs []session.Message
+	for _, msg := range sess.Messages {
+		if msg.Type == session.MessageTypeAssistant {
+			assistantMsgs = append(assistantMsgs, msg)
 		}
 	}
 
-	// 限制长度
-	if len(result) > 5 {
-		result = result[:5]
+	if len(assistantMsgs) == 0 {
+		return "进行中"
 	}
 
-	return strings.Join(result, "；")
+	// 检查最后几条 assistant 消息
+	checkCount := 3
+	if len(assistantMsgs) < checkCount {
+		checkCount = len(assistantMsgs)
+	}
+
+	for i := len(assistantMsgs) - checkCount; i < len(assistantMsgs); i++ {
+		msg := assistantMsgs[i]
+		for _, block := range msg.Content {
+			if block.Type != session.ContentTypeText {
+				continue
+			}
+			text := strings.ToLower(block.Text)
+
+			// 检查完成状态关键词
+			if containsCompletionKeywords(text) {
+				return extractCompletionPhrase(block.Text)
+			}
+		}
+	}
+
+	// 检查是否有文件变更
+	if len(sess.Actions) > 0 {
+		return "已完成操作"
+	}
+
+	return "进行中"
+}
+
+// containsCompletionKeywords 检查是否包含完成状态关键词
+func containsCompletionKeywords(text string) bool {
+	successPatterns := []string{
+		"完成", "成功", "已修复", "已实现", "已添加", "已完成",
+		"done", "completed", "fixed", "implemented", "resolved",
+	}
+	for _, p := range successPatterns {
+		if strings.Contains(text, p) {
+			return true
+		}
+	}
+	return false
+}
+
+// extractCompletionPhrase 提取完成状态短语
+func extractCompletionPhrase(text string) string {
+	// 尝试提取包含完成关键词的句子
+	sentences := strings.Split(text, "。")
+	for _, s := range sentences {
+		s = strings.TrimSpace(s)
+		if len(s) < 5 || len(s) > 100 {
+			continue
+		}
+		lower := strings.ToLower(s)
+		if containsCompletionKeywords(lower) {
+			return truncateUTF8(s, 100)
+		}
+	}
+	return "已完成"
+}
+
+// extractFileChangeSummary 提取文件变更摘要
+func extractFileChangeSummary(sess *session.Session) string {
+	if len(sess.Actions) == 0 {
+		return ""
+	}
+
+	// 统计文件操作
+	fileActions := make(map[string]int)
+	for _, action := range sess.Actions {
+		if action.FilePath != "" {
+			fileActions[action.FilePath]++
+		}
+	}
+
+	if len(fileActions) == 0 {
+		return ""
+	}
+
+	// 按操作次数排序
+	type fileInfo struct {
+		path  string
+		count int
+	}
+	var files []fileInfo
+	for path, count := range fileActions {
+		files = append(files, fileInfo{path, count})
+	}
+	sort.Slice(files, func(i, j int) bool {
+		return files[i].count > files[j].count
+	})
+
+	// 生成摘要
+	var parts []string
+	maxFiles := 5
+	if len(files) < maxFiles {
+		maxFiles = len(files)
+	}
+
+	for i := 0; i < maxFiles; i++ {
+		f := files[i]
+		// 只显示文件名
+		fileName := filepath.Base(f.path)
+		if f.count > 1 {
+			parts = append(parts, fileName+"(x"+string(rune('0'+f.count))+")")
+		} else {
+			parts = append(parts, fileName)
+		}
+	}
+
+	if len(files) > maxFiles {
+		parts = append(parts, fmt.Sprintf("等%d个文件", len(files)))
+	}
+
+	return strings.Join(parts, ", ")
+}
+
+// extractKeyDecision 提取关键技术决策
+func extractKeyDecision(sess *session.Session) string {
+	// 从 assistant 消息中提取决策
+	for _, msg := range sess.Messages {
+		if msg.Type != session.MessageTypeAssistant {
+			continue
+		}
+		for _, block := range msg.Content {
+			if block.Type != session.ContentTypeText {
+				continue
+			}
+			// 查找决策关键词
+			if containsAnyKeyword(block.Text, decisionKeywords) {
+				decision := extractFinalDecision(block.Text)
+				if decision != "" {
+					return truncateUTF8(decision, 150)
+				}
+			}
+		}
+	}
+	return ""
+}
+
+// extractKeyIssue 提取关键问题
+func extractKeyIssue(sess *session.Session) string {
+	// 从 assistant 消息中提取问题
+	for _, msg := range sess.Messages {
+		if msg.Type != session.MessageTypeAssistant {
+			continue
+		}
+		for _, block := range msg.Content {
+			if block.Type != session.ContentTypeText {
+				continue
+			}
+			// 查找问题关键词
+			if containsAnyKeyword(block.Text, issueKeywords) {
+				sentences := extractRelevantSentences(block.Text, issueKeywords)
+				if len(sentences) > 0 {
+					return truncateUTF8(sentences[0], 150)
+				}
+			}
+		}
+	}
+	return ""
 }

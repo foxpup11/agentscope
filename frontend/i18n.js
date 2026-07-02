@@ -217,6 +217,7 @@ const i18n = {
         buildTool: '构建工具',
         features: '特性',
         noProjects: '未找到项目',
+        openFileLocationFailed: '打开文件位置失败',
         cancel: '取消',
 
         // 多会话接力
@@ -477,6 +478,7 @@ const i18n = {
         buildTool: 'Build Tool',
         features: 'Features',
         noProjects: 'No projects found',
+        openFileLocationFailed: 'Failed to open file location',
 
         // Multi-Session Relay
         continuityTab: 'Multi-Session Relay',

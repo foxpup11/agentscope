@@ -8,6 +8,35 @@ let currentKnowledgeType = 'all';
 let isKnowledgeEditing = false;
 
 // ============================================
+// Context Menu Event Delegation
+// ============================================
+
+// 初始化右键菜单事件委托
+function initKnowledgeContextMenu() {
+    const container = document.getElementById('knowledgeDocList');
+    if (!container) return;
+
+    // 使用事件委托处理右键菜单
+    container.addEventListener('contextmenu', (e) => {
+        const docItem = e.target.closest('.knowledge-doc-item');
+        if (docItem) {
+            // 使用 getAttribute 获取原始路径
+            const path = docItem.getAttribute('data-path');
+            if (path) {
+                e.preventDefault();
+                e.stopPropagation();
+                showKnowledgeContextMenu(e, path);
+            }
+        }
+    });
+}
+
+// 在 DOM 加载完成后初始化
+document.addEventListener('DOMContentLoaded', () => {
+    initKnowledgeContextMenu();
+});
+
+// ============================================
 // Initialization
 // ============================================
 
@@ -107,6 +136,96 @@ function renderDocItem(doc) {
             </div>
         </div>
     `;
+}
+
+// ============================================
+// Context Menu (右键菜单)
+// ============================================
+
+let currentContextMenu = null;
+
+/**
+ * 显示知识库文档的右键菜单
+ * @param {MouseEvent} event
+ * @param {string} filePath - 文档文件路径
+ */
+function showKnowledgeContextMenu(event, filePath) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    // 隐藏已有的菜单
+    hideKnowledgeContextMenu();
+
+    // 创建菜单元素
+    const menu = document.createElement('div');
+    menu.className = 'knowledge-context-menu';
+
+    const menuItem = document.createElement('div');
+    menuItem.className = 'context-menu-item';
+    menuItem.innerHTML = `
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+        </svg>
+        <span>打开文件位置</span>
+    `;
+    menuItem.addEventListener('click', () => {
+        openFileLocation(filePath);
+    });
+    menu.appendChild(menuItem);
+
+    // 定位菜单
+    const x = event.clientX;
+    const y = event.clientY;
+    menu.style.left = x + 'px';
+    menu.style.top = y + 'px';
+
+    // 添加到页面
+    document.body.appendChild(menu);
+    currentContextMenu = menu;
+
+    // 调整菜单位置，确保不超出视口
+    requestAnimationFrame(() => {
+        const rect = menu.getBoundingClientRect();
+        if (rect.right > window.innerWidth) {
+            menu.style.left = (x - rect.width) + 'px';
+        }
+        if (rect.bottom > window.innerHeight) {
+            menu.style.top = (y - rect.height) + 'px';
+        }
+    });
+
+    // 点击其他地方隐藏菜单
+    setTimeout(() => {
+        document.addEventListener('click', hideKnowledgeContextMenu, { once: true });
+        document.addEventListener('contextmenu', hideKnowledgeContextMenu, { once: true });
+    }, 0);
+}
+
+/**
+ * 隐藏右键菜单
+ */
+function hideKnowledgeContextMenu() {
+    if (currentContextMenu) {
+        currentContextMenu.remove();
+        currentContextMenu = null;
+    }
+}
+
+/**
+ * 打开文件所在位置
+ * @param {string} filePath - 文件路径
+ */
+async function openFileLocation(filePath) {
+    hideKnowledgeContextMenu();
+    try {
+        console.log('Opening file location:', filePath);
+        await window.go.main.App.OpenFileLocation(filePath);
+    } catch (error) {
+        console.error('Failed to open file location:', error);
+        console.error('File path:', filePath);
+        const errorMsg = error.message || String(error);
+        showToast(t('openFileLocationFailed') + ': ' + errorMsg);
+    }
 }
 
 // 渲染记忆项目列表（显示所有项目）

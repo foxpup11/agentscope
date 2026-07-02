@@ -110,41 +110,52 @@
     height: 16px;
 }
 
-/* 导出按钮组 */
+/* 导出按钮组 - 重新设计 */
 .export-buttons {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 8px;
+}
+
+/* 让最后一个按钮（复制 Prompt）独占一行 */
+.export-buttons .btn-export:last-child {
+    grid-column: 1 / -1;
 }
 
 .btn-export {
     width: 100%;
-    padding: 8px 12px;
+    padding: 10px 8px;
     border: 1px solid var(--border-color, #e5e7eb);
     border-radius: 6px;
     background: var(--bg-secondary, #f9fafb);
     color: var(--text-primary, #1f2937);
-    font-size: 13px;
+    font-size: 12px;
     cursor: pointer;
     transition: all 0.2s;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 8px;
+    justify-content: center;
+    gap: 6px;
+    text-align: center;
 }
 
 .btn-export:hover {
-    background: var(--bg-tertiary, #f3f4f6);
+    background: var(--primary-light, #eff6ff);
     border-color: var(--primary-color, #3b82f6);
+    transform: translateY(-1px);
+    color: var(--primary-color, #3b82f6);
 }
 
 .btn-export:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+    transform: none;
 }
 
 .btn-export svg {
-    width: 14px;
-    height: 14px;
+    width: 16px;
+    height: 16px;
 }
 
 /* 右侧内容区域 */
@@ -547,4 +558,54 @@
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+/* 质量评分 */
+.handoff-quality {
+    margin-bottom: 24px;
+    padding: 16px;
+    background: var(--bg-secondary, #f9fafb);
+    border-radius: 8px;
+    border: 1px solid var(--border-color, #e5e7eb);
+}
+
+.handoff-quality h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary, #1f2937);
+    margin: 0 0 12px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.quality-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.quality-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: var(--bg-primary, #ffffff);
+    border-radius: 6px;
+}
+
+.quality-label {
+    font-size: 13px;
+    color: var(--text-secondary, #6b7280);
+}
+
+.quality-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--primary-color, #3b82f6);
+}
+
+.quality-value.overall {
+    font-size: 16px;
+    color: var(--success-color, #10b981);
 }

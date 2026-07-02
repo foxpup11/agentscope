@@ -11,12 +11,22 @@ type HandoffSummary struct {
 	Project       string          `json:"project"`       // 项目目录名
 	SessionsUsed  int             `json:"sessionsUsed"`  // 参与分析的会话数
 	SessionsTotal int             `json:"sessionsTotal"` // 项目总会话数
+	Summary       string          `json:"summary"`       // 会话核心内容摘要
 	CompletedTasks []CompletedTask `json:"completedTasks"` // 已完成任务
 	PendingTasks   []PendingTask   `json:"pendingTasks"`   // 待办任务
 	KeyDecisions   []Decision      `json:"keyDecisions"`   // 关键决策
 	ModifiedFiles  []FileSummary   `json:"modifiedFiles"`  // 修改的文件概览
 	KnownIssues    []string        `json:"knownIssues"`    // 已知问题/陷阱
 	GeneratedAt    time.Time       `json:"generatedAt"`    // 生成时间
+	Quality        SummaryQuality  `json:"quality"`        // 摘要质量评分
+}
+
+// SummaryQuality 摘要质量评分
+type SummaryQuality struct {
+	Completeness float64 `json:"completeness"` // 完整性评分（0-1）
+	Accuracy     float64 `json:"accuracy"`     // 准确性评分（0-1）
+	Freshness    float64 `json:"freshness"`    // 时效性评分（0-1）
+	OverallScore float64 `json:"overallScore"` // 综合评分（0-1）
 }
 
 // CompletedTask 已完成的任务

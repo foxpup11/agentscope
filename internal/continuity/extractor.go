@@ -1,9 +1,12 @@
 package continuity
 
 import (
+	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"agentscope-desktop/internal/session"
 )
@@ -34,9 +37,16 @@ var taskTypeKeywords = map[string][]string{
 
 // decisionKeywords 决策相关的关键词
 var decisionKeywords = []string{
+	// 中文关键词
 	"决定", "选择", "方案", "决定用", "最终",
-	"decide", "choose", "decision", "approach", "strategy", "方案",
-	"convention", "standard", "pattern",
+	"采用", "选用", "确定用", "最终选择",
+	"技术选型", "架构", "设计模式", "最佳实践",
+	"权衡", "对比", "评估", "分析后",
+	// 英文关键词
+	"decide", "choose", "decision", "approach", "strategy",
+	"adopt", "select", "go with", "settle on",
+	"convention", "standard", "pattern", "architecture",
+	"trade-off", "comparison", "evaluation",
 }
 
 // issueKeywords 已知问题/陷阱的关键词
@@ -127,6 +137,7 @@ func containsFilePath(text string) bool {
 }
 
 // ExtractCompletedTasks 从会话的 actions 中提取已完成的任务
+// 支持多任务提取：按时间窗口分组actions，每个组视为一个独立任务
 func (e *Extractor) ExtractCompletedTasks(sessions []*session.Session) []CompletedTask {
 	var tasks []CompletedTask
 
@@ -135,38 +146,155 @@ func (e *Extractor) ExtractCompletedTasks(sessions []*session.Session) []Complet
 			continue
 		}
 
-		// 将 actions 按文件路径分组
-		fileActions := make(map[string][]session.Action)
-		var nonFileActions []session.Action
+		// 按时间窗口分组actions（5分钟窗口）
+		actionGroups := groupActionsByTimeWindow(sess.Actions, 5*time.Minute)
 
-		for _, action := range sess.Actions {
-			if action.FilePath != "" {
-				fileActions[action.FilePath] = append(fileActions[action.FilePath], action)
-			} else {
-				nonFileActions = append(nonFileActions, action)
+		for _, group := range actionGroups {
+			// 从每组中提取文件操作
+			fileActions := make(map[string][]session.Action)
+			for _, action := range group {
+				if action.FilePath != "" {
+					fileActions[action.FilePath] = append(fileActions[action.FilePath], action)
+				}
+			}
+
+			// 收集该组涉及的文件
+			var filesChanged []string
+			for filePath := range fileActions {
+				filesChanged = append(filesChanged, filePath)
+			}
+
+			// 推断任务描述
+			taskDesc := e.inferTaskDescriptionFromGroup(group, sess)
+
+			if taskDesc != "" && len(filesChanged) > 0 {
+				tasks = append(tasks, CompletedTask{
+					Description:  taskDesc,
+					SessionID:    sess.ID,
+					FilesChanged: filesChanged,
+					Timestamp:    group[0].Timestamp,
+				})
 			}
 		}
 
-		// 从用户 prompt 中提取任务描述
-		taskDesc := e.inferTaskDescription(sess)
-
-		// 收集所有涉及的文件
-		var filesChanged []string
-		for filePath := range fileActions {
-			filesChanged = append(filesChanged, filePath)
-		}
-
-		if taskDesc != "" && len(filesChanged) > 0 {
-			tasks = append(tasks, CompletedTask{
-				Description:  taskDesc,
-				SessionID:    sess.ID,
-				FilesChanged: filesChanged,
-				Timestamp:    sess.StartedAt,
-			})
+		// 如果分组后没有提取到任务，回退到原有逻辑
+		if len(tasks) == 0 || (len(tasks) > 0 && tasks[len(tasks)-1].SessionID != sess.ID) {
+			taskDesc := e.inferTaskDescription(sess)
+			if taskDesc != "" {
+				var filesChanged []string
+				seen := make(map[string]bool)
+				for _, action := range sess.Actions {
+					if action.FilePath != "" && !seen[action.FilePath] {
+						filesChanged = append(filesChanged, action.FilePath)
+						seen[action.FilePath] = true
+					}
+				}
+				if len(filesChanged) > 0 {
+					tasks = append(tasks, CompletedTask{
+						Description:  taskDesc,
+						SessionID:    sess.ID,
+						FilesChanged: filesChanged,
+						Timestamp:    sess.StartedAt,
+					})
+				}
+			}
 		}
 	}
 
 	return tasks
+}
+
+// groupActionsByTimeWindow 按时间窗口分组actions
+func groupActionsByTimeWindow(actions []session.Action, window time.Duration) [][]session.Action {
+	if len(actions) == 0 {
+		return nil
+	}
+
+	// 按时间排序
+	sorted := make([]session.Action, len(actions))
+	copy(sorted, actions)
+	sort.Slice(sorted, func(i, j int) bool {
+		return sorted[i].Timestamp.Before(sorted[j].Timestamp)
+	})
+
+	var groups [][]session.Action
+	currentGroup := []session.Action{sorted[0]}
+
+	for i := 1; i < len(sorted); i++ {
+		// 如果时间间隔超过窗口，开始新组
+		if sorted[i].Timestamp.Sub(sorted[i-1].Timestamp) > window {
+			groups = append(groups, currentGroup)
+			currentGroup = []session.Action{sorted[i]}
+		} else {
+			currentGroup = append(currentGroup, sorted[i])
+		}
+	}
+	groups = append(groups, currentGroup)
+
+	return groups
+}
+
+// inferTaskDescriptionFromGroup 从action组中推断任务描述
+func (e *Extractor) inferTaskDescriptionFromGroup(group []session.Action, sess *session.Session) string {
+	// 优先使用session.Prompt（如果时间匹配）
+	if sess.Prompt != "" {
+		lines := strings.SplitN(sess.Prompt, "\n", 2)
+		desc := strings.TrimSpace(lines[0])
+		desc = truncateUTF8(desc, 200)
+		return desc
+	}
+
+	// 从action的Description中提取
+	for _, action := range group {
+		if action.Description != "" {
+			desc := strings.TrimSpace(action.Description)
+			if len(desc) > 10 {
+				desc = truncateUTF8(desc, 200)
+				return desc
+			}
+		}
+	}
+
+	// 从用户消息中查找包含文件路径的句子
+	for _, msg := range sess.Messages {
+		if msg.Type != session.MessageTypeUser {
+			continue
+		}
+		for _, block := range msg.Content {
+			if block.Type != session.ContentTypeText || block.Text == "" {
+				continue
+			}
+			// 查找包含文件路径的句子
+			sentences := strings.Split(block.Text, "。")
+			for _, sentence := range sentences {
+				sentence = strings.TrimSpace(sentence)
+				if len(sentence) > 10 && containsFilePath(sentence) {
+					sentence = truncateUTF8(sentence, 200)
+					return sentence
+				}
+			}
+		}
+	}
+
+	// 回退到第一个有内容的用户消息
+	for _, msg := range sess.Messages {
+		if msg.Type != session.MessageTypeUser {
+			continue
+		}
+		for _, block := range msg.Content {
+			if block.Type == session.ContentTypeText && block.Text != "" {
+				text := strings.TrimSpace(block.Text)
+				if len(text) > 10 {
+					lines := strings.SplitN(text, "\n", 2)
+					desc := strings.TrimSpace(lines[0])
+					desc = truncateUTF8(desc, 200)
+					return desc
+				}
+			}
+		}
+	}
+
+	return ""
 }
 
 // inferTaskDescription 从会话中推断任务描述
@@ -176,9 +304,7 @@ func (e *Extractor) inferTaskDescription(sess *session.Session) string {
 		// 截取第一行作为描述
 		lines := strings.SplitN(sess.Prompt, "\n", 2)
 		desc := strings.TrimSpace(lines[0])
-		if len(desc) > 200 {
-			desc = desc[:200] + "..."
-		}
+		desc = truncateUTF8(desc, 200)
 		return desc
 	}
 
@@ -193,9 +319,7 @@ func (e *Extractor) inferTaskDescription(sess *session.Session) string {
 				if len(text) > 10 {
 					lines := strings.SplitN(text, "\n", 2)
 					desc := strings.TrimSpace(lines[0])
-					if len(desc) > 200 {
-						desc = desc[:200] + "..."
-					}
+					desc = truncateUTF8(desc, 200)
 					return desc
 				}
 			}
@@ -206,28 +330,52 @@ func (e *Extractor) inferTaskDescription(sess *session.Session) string {
 }
 
 // ExtractDecisions 从会话中提取关键决策
+// 优化：只从每个会话的最后几条assistant消息中提取，避免重复
 func (e *Extractor) ExtractDecisions(sessions []*session.Session) []Decision {
 	var decisions []Decision
 
 	for _, sess := range sessions {
-		for _, msg := range sess.Messages {
-			if msg.Type != session.MessageTypeAssistant {
-				continue
+		// 收集所有assistant消息
+		var assistantMsgs []struct {
+			msg session.Message
+			idx int
+		}
+		for i, msg := range sess.Messages {
+			if msg.Type == session.MessageTypeAssistant {
+				assistantMsgs = append(assistantMsgs, struct {
+					msg session.Message
+					idx int
+				}{msg, i})
 			}
+		}
 
-			for _, block := range msg.Content {
+		if len(assistantMsgs) == 0 {
+			continue
+		}
+
+		// 只从最后3条assistant消息中提取决策
+		startIdx := 0
+		if len(assistantMsgs) > 3 {
+			startIdx = len(assistantMsgs) - 3
+		}
+
+		seenDecisions := make(map[string]bool)
+		for _, am := range assistantMsgs[startIdx:] {
+			for _, block := range am.msg.Content {
 				if block.Type != session.ContentTypeText {
 					continue
 				}
 
 				// 在 assistant 消息中查找决策关键词
 				if containsAnyKeyword(block.Text, decisionKeywords) {
-					sentences := extractRelevantSentences(block.Text, decisionKeywords)
-					for _, sentence := range sentences {
+					// 提取最终结论（跳过讨论过程）
+					decision := extractFinalDecision(block.Text)
+					if decision != "" && !seenDecisions[decision] {
+						seenDecisions[decision] = true
 						decisions = append(decisions, Decision{
-							Description: sentence,
+							Description: decision,
 							Context:     truncate(block.Text, 300),
-							Timestamp:   msg.Timestamp,
+							Timestamp:   am.msg.Timestamp,
 							SessionID:   sess.ID,
 						})
 					}
@@ -237,6 +385,67 @@ func (e *Extractor) ExtractDecisions(sessions []*session.Session) []Decision {
 	}
 
 	return decisions
+}
+
+// extractFinalDecision 从文本中提取最终决策结论
+// 优先提取包含"最终"、"决定用"、"选择"等确定性词汇的句子
+func extractFinalDecision(text string) string {
+	sentences := strings.Split(text, "。")
+
+	// 优先级1：包含确定性词汇的句子
+	finalKeywords := []string{
+		"最终决定", "决定用", "选择使用", "采用", "选用", "确定用",
+		"最终选择", "经评估后", "综合考虑后", "经过对比",
+		"decided to", "chose to", "will use", "selected",
+	}
+
+	for _, s := range sentences {
+		s = strings.TrimSpace(s)
+		if len(s) < 10 || len(s) > 150 {
+			continue
+		}
+		lower := strings.ToLower(s)
+		for _, kw := range finalKeywords {
+			if strings.Contains(lower, strings.ToLower(kw)) {
+				return truncateUTF8(s, 150)
+			}
+		}
+	}
+
+	// 优先级2：包含决策关键词且长度适中的句子
+	for _, s := range sentences {
+		s = strings.TrimSpace(s)
+		if len(s) < 15 || len(s) > 150 {
+			continue
+		}
+		lower := strings.ToLower(s)
+		for _, kw := range decisionKeywords {
+			if strings.Contains(lower, strings.ToLower(kw)) {
+				// 排除包含代码、markdown格式的内容
+				if !containsCodeOrMarkdown(s) {
+					return truncateUTF8(s, 150)
+				}
+			}
+		}
+	}
+
+	return ""
+}
+
+// containsCodeOrMarkdown 检查文本是否包含代码或markdown格式
+func containsCodeOrMarkdown(text string) bool {
+	codeIndicators := []string{
+		"```", "func ", "var ", "import ", "package ",
+		"if ", "for ", "switch ", "case ",
+		"[", "]", "{", "}",
+		"//", "/*", "*/",
+	}
+	for _, indicator := range codeIndicators {
+		if strings.Contains(text, indicator) {
+			return true
+		}
+	}
+	return false
 }
 
 // ExtractKnownIssues 从会话中提取已知问题
@@ -282,6 +491,7 @@ func (e *Extractor) ExtractKnownIssues(sessions []*session.Session) []string {
 }
 
 // ExtractPendingTasks 从会话中提取可能的待办任务
+// 优化：过滤模板文本、代码块、占位符等无效内容
 func (e *Extractor) ExtractPendingTasks(sessions []*session.Session) []PendingTask {
 	var tasks []PendingTask
 	seen := make(map[string]bool)
@@ -299,7 +509,8 @@ func (e *Extractor) ExtractPendingTasks(sessions []*session.Session) []PendingTa
 				text := block.Text
 				if containsTODOPattern(text) {
 					desc := extractTODODescription(text)
-					if desc != "" && !seen[desc] {
+					// 过滤无效内容
+					if desc != "" && !seen[desc] && isValidPendingTask(desc) {
 						seen[desc] = true
 						tasks = append(tasks, PendingTask{
 							Description: desc,
@@ -322,7 +533,8 @@ func (e *Extractor) ExtractPendingTasks(sessions []*session.Session) []PendingTa
 				}
 				if containsUnfinishedPromise(block.Text) {
 					desc := extractPromiseDescription(block.Text)
-					if desc != "" && !seen[desc] {
+					// 过滤无效内容
+					if desc != "" && !seen[desc] && isValidPendingTask(desc) {
 						seen[desc] = true
 						tasks = append(tasks, PendingTask{
 							Description: desc,
@@ -336,6 +548,58 @@ func (e *Extractor) ExtractPendingTasks(sessions []*session.Session) []PendingTa
 	}
 
 	return tasks
+}
+
+// isValidPendingTask 验证待办任务描述是否有效
+func isValidPendingTask(desc string) bool {
+	// 过滤太短的内容
+	if len(desc) < 5 {
+		return false
+	}
+
+	// 过滤模板文本和占位符
+	invalidPatterns := []string{
+		"待办任务（用户的未完成需求）",
+		"待办事项",
+		"TODO",
+		"FIXME",
+		"### 下一步",
+		"### 待办",
+		"## TODO",
+		"## FIXME",
+		"用户消息",
+		"AI回复",
+	}
+
+	lower := strings.ToLower(desc)
+	for _, pattern := range invalidPatterns {
+		if strings.Contains(lower, strings.ToLower(pattern)) {
+			return false
+		}
+	}
+
+	// 过滤包含代码的内容
+	if containsCodeOrMarkdown(desc) {
+		return false
+	}
+
+	// 过滤纯数字或标点
+	trimmed := strings.TrimSpace(desc)
+	if len(trimmed) == 0 {
+		return false
+	}
+	// 检查是否大部分是标点符号
+	punctCount := 0
+	for _, r := range trimmed {
+		if strings.ContainsRune(".,;:!?()[]{}`'\"-–—/#*_", r) {
+			punctCount++
+		}
+	}
+	if float64(punctCount)/float64(len([]rune(trimmed))) > 0.5 {
+		return false
+	}
+
+	return true
 }
 
 // BuildFileSummaries 构建文件概览
@@ -370,14 +634,10 @@ func (e *Extractor) BuildFileSummaries(sessions []*session.Session) []FileSummar
 		summaries = append(summaries, *fs)
 	}
 
-	// 简单的冒泡排序，按 ActionCount 降序
-	for i := 0; i < len(summaries); i++ {
-		for j := i + 1; j < len(summaries); j++ {
-			if summaries[j].ActionCount > summaries[i].ActionCount {
-				summaries[i], summaries[j] = summaries[j], summaries[i]
-			}
-		}
-	}
+	// 使用标准库排序，O(n log n)，按 ActionCount 降序
+	sort.Slice(summaries, func(i, j int) bool {
+		return summaries[i].ActionCount > summaries[j].ActionCount
+	})
 
 	return summaries
 }
@@ -407,9 +667,7 @@ func extractRelevantSentences(text string, keywords []string) []string {
 		lower := strings.ToLower(s)
 		for _, kw := range keywords {
 			if strings.Contains(lower, strings.ToLower(kw)) {
-				if len(s) > 200 {
-					s = s[:200] + "..."
-				}
+				s = truncateUTF8(s, 200)
 				relevant = append(relevant, s)
 				break
 			}
@@ -420,20 +678,53 @@ func extractRelevantSentences(text string, keywords []string) []string {
 }
 
 func truncate(text string, maxLen int) string {
-	if len(text) <= maxLen {
+	return truncateUTF8(text, maxLen)
+}
+
+// truncateUTF8 安全截断字符串，按 rune 而非字节截断
+func truncateUTF8(text string, maxLen int) string {
+	if utf8.RuneCountInString(text) <= maxLen {
 		return text
 	}
-	return text[:maxLen] + "..."
+	runes := []rune(text)
+	return string(runes[:maxLen]) + "..."
 }
 
 func containsTODOPattern(text string) bool {
 	lower := strings.ToLower(text)
-	todoPatterns := []string{"todo", "fixme", "hack", "需要完成", "待完成", "后续需要", "还需要", "待处理"}
-	for _, p := range todoPatterns {
+
+	// 显式TODO标记
+	explicitPatterns := []string{"todo", "fixme", "hack", "xxx"}
+	for _, p := range explicitPatterns {
 		if strings.Contains(lower, p) {
 			return true
 		}
 	}
+
+	// 中文自然语言模式
+	chinesePatterns := []string{
+		"需要完成", "待完成", "后续需要", "还需要", "待处理",
+		"需要实现", "需要优化", "需要修复", "需要添加", "需要处理",
+		"待实现", "待优化", "待修复", "待添加", "待处理",
+		"还没有", "尚未", "未完成", "未实现",
+	}
+	for _, p := range chinesePatterns {
+		if strings.Contains(lower, p) {
+			return true
+		}
+	}
+
+	// 英文自然语言模式
+	englishPatterns := []string{
+		"need to", "should", "must", "have to",
+		"pending", "remaining", "unfinished", "incomplete",
+	}
+	for _, p := range englishPatterns {
+		if strings.Contains(lower, p) {
+			return true
+		}
+	}
+
 	return false
 }
 
@@ -441,13 +732,40 @@ func extractTODODescription(text string) string {
 	lines := strings.Split(text, "\n")
 	for _, line := range lines {
 		lower := strings.ToLower(strings.TrimSpace(line))
-		if strings.Contains(lower, "todo") || strings.Contains(lower, "fixme") || strings.Contains(lower, "hack") ||
-			strings.Contains(lower, "待完成") || strings.Contains(lower, "需要完成") || strings.Contains(lower, "还需要") {
+
+		// 显式TODO标记
+		if strings.Contains(lower, "todo") || strings.Contains(lower, "fixme") || strings.Contains(lower, "hack") {
 			line = strings.TrimSpace(line)
-			if len(line) > 200 {
-				line = line[:200] + "..."
-			}
+			line = truncateUTF8(line, 200)
 			return line
+		}
+
+		// 中文自然语言模式
+		chinesePatterns := []string{
+			"待完成", "需要完成", "还需要", "待处理",
+			"需要实现", "需要优化", "需要修复", "需要添加",
+			"待实现", "待优化", "待修复", "待添加",
+			"还没有", "尚未", "未完成", "未实现",
+		}
+		for _, p := range chinesePatterns {
+			if strings.Contains(lower, p) {
+				line = strings.TrimSpace(line)
+				line = truncateUTF8(line, 200)
+				return line
+			}
+		}
+
+		// 英文自然语言模式
+		englishPatterns := []string{
+			"need to", "should", "must", "have to",
+			"pending", "remaining", "unfinished",
+		}
+		for _, p := range englishPatterns {
+			if strings.Contains(lower, p) {
+				line = strings.TrimSpace(line)
+				line = truncateUTF8(line, 200)
+				return line
+			}
 		}
 	}
 	return ""
@@ -470,9 +788,7 @@ func extractPromiseDescription(text string) string {
 		lower := strings.ToLower(strings.TrimSpace(line))
 		if strings.Contains(lower, "下一步") || strings.Contains(lower, "接下来") || strings.Contains(lower, "then i") || strings.Contains(lower, "next step") {
 			line = strings.TrimSpace(line)
-			if len(line) > 200 {
-				line = line[:200] + "..."
-			}
+			line = truncateUTF8(line, 200)
 			return line
 		}
 	}
@@ -506,47 +822,186 @@ func isConfigFile(path string) bool {
 	return false
 }
 
-// DeduplicateTasks 去重任务列表
+// DeduplicateTasks 去重任务列表（保留原有函数，向后兼容）
 func DeduplicateTasks(tasks []CompletedTask) []CompletedTask {
-	seen := make(map[string]bool)
+	return DeduplicateTasksAdvanced(tasks, 0.6)
+}
+
+// DeduplicateTasksAdvanced 基于相似度的智能去重
+func DeduplicateTasksAdvanced(tasks []CompletedTask, threshold float64) []CompletedTask {
+	if len(tasks) <= 1 {
+		return tasks
+	}
+
 	var result []CompletedTask
+	used := make(map[int]bool)
 
-	for _, t := range tasks {
-		key := t.Description
-		if !seen[key] {
-			seen[key] = true
-			result = append(result, t)
+	for i := 0; i < len(tasks); i++ {
+		if used[i] {
+			continue
+		}
+
+		// 保留第一个，标记相似的为已使用
+		result = append(result, tasks[i])
+
+		for j := i + 1; j < len(tasks); j++ {
+			if used[j] {
+				continue
+			}
+
+			// 计算相似度
+			similarity := calculateTaskSimilarity(tasks[i], tasks[j])
+			if similarity > threshold {
+				used[j] = true
+			}
 		}
 	}
 
 	return result
 }
 
-// DeduplicateDecisions 去重决策列表
+// calculateTaskSimilarity 计算两个任务的相似度
+func calculateTaskSimilarity(a, b CompletedTask) float64 {
+	// 描述相似度（权重0.7）
+	descSim := calculateStringSimilarity(a.Description, b.Description)
+
+	// 文件重叠度（权重0.3）
+	filesSim := calculateFilesSimilarity(a.FilesChanged, b.FilesChanged)
+
+	// 如果描述高度相似，即使文件不同也认为是同一任务
+	if descSim > 0.8 {
+		return descSim*0.7 + filesSim*0.3
+	}
+
+	// 如果文件完全相同，即使描述不同也可能相关
+	if filesSim > 0.9 {
+		return descSim*0.7 + filesSim*0.3
+	}
+
+	// 综合评分
+	return descSim*0.7 + filesSim*0.3
+}
+
+// calculateStringSimilarity 计算两个字符串的相似度（Jaccard系数）
+func calculateStringSimilarity(a, b string) float64 {
+	setA := toWordSet(a)
+	setB := toWordSet(b)
+
+	if len(setA) == 0 || len(setB) == 0 {
+		return 0
+	}
+
+	intersection := 0
+	for word := range setA {
+		if setB[word] {
+			intersection++
+		}
+	}
+
+	union := len(setA) + len(setB) - intersection
+	if union == 0 {
+		return 0
+	}
+
+	return float64(intersection) / float64(union)
+}
+
+// toWordSet 将文本转换为单词集合
+func toWordSet(text string) map[string]bool {
+	words := make(map[string]bool)
+	// 简单分词：按空格和标点分割
+	tokens := regexp.MustCompile(`[\s\p{P}]+`).Split(strings.ToLower(text), -1)
+	for _, token := range tokens {
+		if len(token) > 1 {
+			words[token] = true
+		}
+	}
+	return words
+}
+
+// calculateFilesSimilarity 计算文件列表的相似度
+func calculateFilesSimilarity(a, b []string) float64 {
+	if len(a) == 0 || len(b) == 0 {
+		return 0
+	}
+
+	setA := make(map[string]bool)
+	for _, f := range a {
+		setA[filepath.Base(f)] = true
+	}
+
+	setB := make(map[string]bool)
+	for _, f := range b {
+		setB[filepath.Base(f)] = true
+	}
+
+	intersection := 0
+	for f := range setA {
+		if setB[f] {
+			intersection++
+		}
+	}
+
+	union := len(setA) + len(setB) - intersection
+	if union == 0 {
+		return 0
+	}
+
+	return float64(intersection) / float64(union)
+}
+
+// DeduplicateDecisions 去重决策列表（基于相似度）
 func DeduplicateDecisions(decisions []Decision) []Decision {
-	seen := make(map[string]bool)
-	var result []Decision
+	if len(decisions) <= 1 {
+		return decisions
+	}
 
-	for _, d := range decisions {
-		key := d.Description
-		if !seen[key] {
-			seen[key] = true
-			result = append(result, d)
+	var result []Decision
+	used := make(map[int]bool)
+
+	for i := 0; i < len(decisions); i++ {
+		if used[i] {
+			continue
+		}
+		result = append(result, decisions[i])
+
+		for j := i + 1; j < len(decisions); j++ {
+			if used[j] {
+				continue
+			}
+			similarity := calculateStringSimilarity(decisions[i].Description, decisions[j].Description)
+			if similarity > 0.5 {
+				used[j] = true
+			}
 		}
 	}
 
 	return result
 }
 
-// DeduplicateIssues 去重已知问题
+// DeduplicateIssues 去重已知问题（基于相似度）
 func DeduplicateIssues(issues []string) []string {
-	seen := make(map[string]bool)
-	var result []string
+	if len(issues) <= 1 {
+		return issues
+	}
 
-	for _, issue := range issues {
-		if !seen[issue] {
-			seen[issue] = true
-			result = append(result, issue)
+	var result []string
+	used := make(map[int]bool)
+
+	for i := 0; i < len(issues); i++ {
+		if used[i] {
+			continue
+		}
+		result = append(result, issues[i])
+
+		for j := i + 1; j < len(issues); j++ {
+			if used[j] {
+				continue
+			}
+			similarity := calculateStringSimilarity(issues[i], issues[j])
+			if similarity > 0.5 {
+				used[j] = true
+			}
 		}
 	}
 
@@ -598,4 +1053,46 @@ func FilterByTimeRange(sessions []*session.Session, since time.Time) []*session.
 		}
 	}
 	return filtered
+}
+
+// ExtractSessionSummary 从会话中提取核心内容摘要
+func ExtractSessionSummary(sessions []*session.Session) string {
+	if len(sessions) == 0 {
+		return ""
+	}
+
+	var summaries []string
+
+	for _, sess := range sessions {
+		// 从prompt提取核心需求
+		if sess.Prompt != "" {
+			// 取第一行作为核心需求
+			lines := strings.SplitN(sess.Prompt, "\n", 2)
+			prompt := strings.TrimSpace(lines[0])
+			if len(prompt) > 10 {
+				summaries = append(summaries, truncateUTF8(prompt, 100))
+			}
+		}
+	}
+
+	if len(summaries) == 0 {
+		return "暂无会话摘要"
+	}
+
+	// 合并并去重
+	seen := make(map[string]bool)
+	var result []string
+	for _, s := range summaries {
+		if !seen[s] {
+			seen[s] = true
+			result = append(result, s)
+		}
+	}
+
+	// 限制长度
+	if len(result) > 5 {
+		result = result[:5]
+	}
+
+	return strings.Join(result, "；")
 }

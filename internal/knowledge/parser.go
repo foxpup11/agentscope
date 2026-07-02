@@ -304,7 +304,7 @@ func GenerateClaudeMDTemplate(projectName string) string {
 }
 
 // GenerateTemplate 生成文档模板
-func GenerateTemplate(docType DocType, title string) string {
+func GenerateTemplate(docType DocType, title string, sessionId string) string {
 	switch docType {
 	case DocTypePlans:
 		return `# ` + title + `
@@ -328,11 +328,17 @@ func GenerateTemplate(docType DocType, title string) string {
 [验证方法]
 `
 	case DocTypeMemory:
-		return `---
+		// 构建 frontmatter，如果提供了 sessionId 则包含 originSessionId
+		frontmatter := `---
 name: ` + strings.ToLower(strings.ReplaceAll(title, " ", "-")) + `
 description: ` + title + `
 metadata:
-  node_type: memory
+  node_type: memory`
+		if sessionId != "" {
+			frontmatter += `
+  originSessionId: ` + sessionId
+		}
+		frontmatter += `
 ---
 
 ` + title + `
@@ -341,6 +347,7 @@ metadata:
 
 **How to apply:** [如何应用这个记忆]
 `
+		return frontmatter
 	case DocTypeClaudeMD:
 		return GetClaudeMDTemplate(title)
 	default:

@@ -215,12 +215,17 @@ AgentScope 运行在 Claude Code **外部**，这意味着：
 
 ## 预览
 
-![Token 仪表盘](docs/images/preview.png)
+docs/images/preview0.png
 
-![会话管理](docs/images/preview2.png)
+docs/images/preview1.png
 
-![对话记录](docs/images/preview3.png)
+docs/images/preview2.png
 
+docs/images/preview3.png
+
+docs/images/preview4.png
+
+docs/images/preview5.png
 ---
 
 ## 快速上手

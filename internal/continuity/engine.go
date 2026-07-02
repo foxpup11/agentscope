@@ -92,6 +92,7 @@ func (e *Engine) GenerateHandoff(projectDir string, sessionCount int) (*HandoffS
 		Project:        projectDir,
 		SessionsUsed:   len(allSessions),
 		SessionsTotal:  totalSessions,
+		Summary:        ExtractSessionSummary(allSessions),
 		CompletedTasks: completedTasks,
 		PendingTasks:   pendingTasks,
 		KeyDecisions:   decisions,
@@ -99,6 +100,9 @@ func (e *Engine) GenerateHandoff(projectDir string, sessionCount int) (*HandoffS
 		KnownIssues:    issues,
 		GeneratedAt:    time.Now(),
 	}
+
+	// 计算质量评分
+	summary.Quality = CalculateSummaryQuality(summary)
 
 	return summary, nil
 }
@@ -237,4 +241,61 @@ type ProjectInfo struct {
 	DirName      string    `json:"dirName"`      // 目录名
 	SessionCount int       `json:"sessionCount"` // 会话数
 	LastActivity time.Time `json:"lastActivity"` // 最后活动时间
+}
+
+// CalculateSummaryQuality 计算摘要质量评分
+func CalculateSummaryQuality(summary *HandoffSummary) SummaryQuality {
+	quality := SummaryQuality{}
+
+	// 1. 完整性评分（40%）：各维度是否有内容
+	completenessScore := 0.0
+	totalDimensions := 5.0
+
+	if len(summary.CompletedTasks) > 0 {
+		completenessScore += 1.0
+	}
+	if len(summary.PendingTasks) > 0 {
+		completenessScore += 1.0
+	}
+	if len(summary.KeyDecisions) > 0 {
+		completenessScore += 1.0
+	}
+	if len(summary.ModifiedFiles) > 0 {
+		completenessScore += 1.0
+	}
+	if len(summary.KnownIssues) > 0 {
+		completenessScore += 1.0
+	}
+	quality.Completeness = completenessScore / totalDimensions
+
+	// 2. 准确性评分（40%）：Git验证率
+	if len(summary.CompletedTasks) > 0 {
+		verifiedCount := 0
+		for _, task := range summary.CompletedTasks {
+			if task.VerifiedByGit {
+				verifiedCount++
+			}
+		}
+		quality.Accuracy = float64(verifiedCount) / float64(len(summary.CompletedTasks))
+	} else {
+		quality.Accuracy = 0
+	}
+
+	// 3. 时效性评分（20%）：基于会话时间分布
+	if summary.SessionsUsed > 0 {
+		// 使用会话使用率作为时效性指标
+		// 使用的会话越多，时效性越好
+		sessionRatio := float64(summary.SessionsUsed) / float64(summary.SessionsTotal)
+		if sessionRatio > 1 {
+			sessionRatio = 1
+		}
+		quality.Freshness = sessionRatio
+	} else {
+		quality.Freshness = 0
+	}
+
+	// 4. 综合评分
+	quality.OverallScore = quality.Completeness*0.4 + quality.Accuracy*0.4 + quality.Freshness*0.2
+
+	return quality
 }

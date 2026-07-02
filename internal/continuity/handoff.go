@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 // HandoffGenerator 生成手交文件
@@ -49,6 +50,13 @@ func (g *HandoffGenerator) GenerateMarkdown(summary *HandoffSummary) string {
 	sb.WriteString(fmt.Sprintf("- **待办事项**: %d\n", len(summary.PendingTasks)))
 	sb.WriteString(fmt.Sprintf("- **关键决策**: %d\n", len(summary.KeyDecisions)))
 	sb.WriteString("\n")
+
+	// 会话核心摘要
+	if summary.Summary != "" {
+		sb.WriteString("## 核心内容\n\n")
+		sb.WriteString(summary.Summary)
+		sb.WriteString("\n\n")
+	}
 
 	// 已完成任务
 	if len(summary.CompletedTasks) > 0 {
@@ -181,6 +189,7 @@ func (g *HandoffGenerator) GeneratePrompt(summary *HandoffSummary) string {
 }
 
 // SaveToMemory 保存交接摘要到 memory 目录
+// 同一天多次导出会覆盖现有文件，避免产生重复冗余
 func (g *HandoffGenerator) SaveToMemory(summary *HandoffSummary, content string) (string, error) {
 	// 构建 memory 目录路径
 	memoryDir := filepath.Join(g.homeDir, ".claude", "projects", summary.Project, "memory")
@@ -190,8 +199,20 @@ func (g *HandoffGenerator) SaveToMemory(summary *HandoffSummary, content string)
 		return "", fmt.Errorf("创建 memory 目录失败: %w", err)
 	}
 
-	// 生成文件名
-	filename := fmt.Sprintf("handoff-%s.md", summary.GeneratedAt.Format("2006-01-02"))
+	// 先清理同一天的旧handoff文件
+	pattern := filepath.Join(memoryDir, "handoff-*.md")
+	existingFiles, _ := filepath.Glob(pattern)
+	today := summary.GeneratedAt.Format("2006-01-02")
+	for _, f := range existingFiles {
+		baseName := filepath.Base(f)
+		// 检查文件名是否包含今天的日期
+		if strings.Contains(baseName, today) {
+			os.Remove(f)
+		}
+	}
+
+	// 生成文件名（包含时间戳，精确到分钟，避免秒级重复）
+	filename := fmt.Sprintf("handoff-%s.md", summary.GeneratedAt.Format("2006-01-02-1504"))
 	filePath := filepath.Join(memoryDir, filename)
 
 	// 写入文件
@@ -205,10 +226,12 @@ func (g *HandoffGenerator) SaveToMemory(summary *HandoffSummary, content string)
 // 辅助函数
 
 func truncateStr(s string, maxLen int) string {
-	if len(s) <= maxLen {
+	if utf8.RuneCountInString(s) <= maxLen {
 		return s
 	}
-	return s[:maxLen] + "..."
+	// 按 rune 截断，避免在多字节字符中间截断
+	runes := []rune(s)
+	return string(runes[:maxLen]) + "..."
 }
 
 func truncatePath(path string) string {

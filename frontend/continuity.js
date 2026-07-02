@@ -46,12 +46,31 @@ function renderProjectSelect() {
     if (continuityProjects.length > 0) {
         currentContinuityProject = continuityProjects[0].dirName;
         select.value = currentContinuityProject;
+
+        // 设置分析会话数上限
+        const sessionCountInput = document.getElementById('continuitySessionCount');
+        if (sessionCountInput) {
+            sessionCountInput.max = continuityProjects[0].sessionCount;
+        }
     }
 }
 
 // 项目选择变化
 function onContinuityProjectChange(value) {
     currentContinuityProject = value;
+
+    // 更新分析会话数上限
+    const project = continuityProjects.find(p => p.dirName === value);
+    if (project) {
+        const sessionCountInput = document.getElementById('continuitySessionCount');
+        if (sessionCountInput) {
+            sessionCountInput.max = project.sessionCount;
+            // 如果当前值超过上限，自动调整
+            if (parseInt(sessionCountInput.value) > project.sessionCount) {
+                sessionCountInput.value = project.sessionCount;
+            }
+        }
+    }
 }
 
 // 生成交接摘要
@@ -103,6 +122,19 @@ function renderContinuitySummary() {
     html += '<div class="stat-card"><div class="stat-value">' + s.keyDecisions.length + '</div><div class="stat-label">' + (t('decisions') || '决策') + '</div></div>';
     html += '<div class="stat-card"><div class="stat-value">' + s.modifiedFiles.length + '</div><div class="stat-label">' + (t('files') || '文件') + '</div></div>';
     html += '</div>';
+
+    // 质量评分
+    if (s.quality) {
+        html += '<div class="handoff-quality">';
+        html += '<h3><span class="section-icon info"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span> ' + (t('qualityScore') || '质量评分') + '</h3>';
+        html += '<div class="quality-grid">';
+        html += '<div class="quality-item"><span class="quality-label">' + (t('completeness') || '完整性') + '</span><span class="quality-value">' + Math.round(s.quality.completeness * 100) + '%</span></div>';
+        html += '<div class="quality-item"><span class="quality-label">' + (t('accuracy') || '准确性') + '</span><span class="quality-value">' + Math.round(s.quality.accuracy * 100) + '%</span></div>';
+        html += '<div class="quality-item"><span class="quality-label">' + (t('freshness') || '时效性') + '</span><span class="quality-value">' + Math.round(s.quality.freshness * 100) + '%</span></div>';
+        html += '<div class="quality-item"><span class="quality-label">' + (t('overallScore') || '综合评分') + '</span><span class="quality-value overall">' + Math.round(s.quality.overallScore * 100) + '%</span></div>';
+        html += '</div>';
+        html += '</div>';
+    }
 
     // 已完成任务
     if (s.completedTasks.length > 0) {

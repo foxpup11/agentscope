@@ -9,7 +9,7 @@ const i18n = {
         // Tab 导航
         dashboard: 'Token 概览',
         sessionsTab: '会话管理',
-        continuityTab: '会话连续性',
+        continuityTab: '多会话接力',
 
         // 监控状态
         monitoringActive: '实时监控已开启',
@@ -219,16 +219,16 @@ const i18n = {
         noProjects: '未找到项目',
         cancel: '取消',
 
-        // 会话连续性
-        continuityTab: '会话连续性',
-        continuitySettings: '连续性设置',
+        // 多会话接力
+        continuityTab: '多会话接力',
+        continuitySettings: '接力设置',
         sessionCount: '分析会话数',
         generateHandoff: '生成交接摘要',
-        generating: '正在生成交接摘要...',
+        generating: '正在生成接力摘要...',
         exportToMemory: '导出到 Memory',
         viewMarkdown: '查看 Markdown',
         copyPrompt: '复制 Prompt',
-        continuityEmpty: '会话连续性引擎',
+        continuityEmpty: '多会话接力引擎',
         continuityEmptyDesc: '选择项目并点击"生成交接摘要"来分析最近的会话',
         handoffTitle: '会话交接摘要',
         completedTasks: '已完成任务',
@@ -252,6 +252,13 @@ const i18n = {
         back: '返回',
         selectProjectFirst: '请先选择项目',
         generateFailed: '生成失败',
+
+        // 质量评分
+        qualityScore: '质量评分',
+        completeness: '完整性',
+        accuracy: '准确性',
+        freshness: '时效性',
+        overallScore: '综合评分',
     },
     en: {
         // Header
@@ -471,16 +478,16 @@ const i18n = {
         features: 'Features',
         noProjects: 'No projects found',
 
-        // Continuity
-        continuityTab: 'Continuity',
-        continuitySettings: 'Continuity Settings',
+        // Multi-Session Relay
+        continuityTab: 'Multi-Session Relay',
+        continuitySettings: 'Relay Settings',
         sessionCount: 'Sessions to Analyze',
         generateHandoff: 'Generate Handoff',
-        generating: 'Generating handoff summary...',
+        generating: 'Generating relay summary...',
         exportToMemory: 'Export to Memory',
         viewMarkdown: 'View Markdown',
         copyPrompt: 'Copy Prompt',
-        continuityEmpty: 'Session Continuity Engine',
+        continuityEmpty: 'Multi-Session Relay Engine',
         continuityEmptyDesc: 'Select a project and click "Generate Handoff" to analyze recent sessions',
         handoffTitle: 'Session Handoff Summary',
         completedTasks: 'Completed Tasks',
@@ -504,6 +511,13 @@ const i18n = {
         back: 'Back',
         selectProjectFirst: 'Please select a project first',
         generateFailed: 'Generation failed',
+
+        // Quality Score
+        qualityScore: 'Quality Score',
+        completeness: 'Completeness',
+        accuracy: 'Accuracy',
+        freshness: 'Freshness',
+        overallScore: 'Overall Score',
     }
 };
 

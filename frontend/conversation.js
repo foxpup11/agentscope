@@ -104,9 +104,6 @@ function renderConversation(messages) {
     }
 
     container.innerHTML = messages.map(msg => renderMessage(msg)).join('');
-
-    // 滚动到底部
-    container.scrollTop = container.scrollHeight;
 }
 
 /**

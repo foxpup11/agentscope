@@ -10,9 +10,32 @@
     <link rel="stylesheet" href="./claudemd-editor.css">
     <link rel="stylesheet" href="./conversation.css">
     <link rel="stylesheet" href="./continuity.css">
+    <link rel="stylesheet" href="./splash.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script>
+        // 禁用浏览器默认右键菜单
+        document.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
+    </script>
 </head>
 <body>
+    <!-- Splash Screen -->
+    <div id="splashScreen" class="splash-screen">
+        <div class="splash-content">
+            <div class="splash-logo-container">
+                <div class="splash-glow"></div>
+                <img src="./appicon.png" alt="AgentScope" class="splash-logo">
+                <div class="splash-pulse"></div>
+            </div>
+            <h1 class="splash-title">AgentScope</h1>
+            <p class="splash-subtitle">Visualize your Claude Code</p>
+            <div class="splash-progress">
+                <div class="splash-progress-bar"></div>
+            </div>
+        </div>
+    </div>
+
     <div id="app">
         <!-- Header -->
         <header class="header">
@@ -51,7 +74,7 @@
                         <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
                         <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                     </svg>
-                    <span data-i18n="continuityTab">会话连续性</span>
+                    <span data-i18n="continuityTab">多会话接力</span>
                 </button>
             </nav>
             <div class="header-actions">
@@ -483,18 +506,17 @@
                     <div class="sidebar-header">
                         <h3 data-i18n="knowledge">知识库</h3>
                         <div class="sidebar-actions">
-                            <button class="btn btn-sm" onclick="refreshKnowledge()" title="刷新">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <button class="btn-icon" onclick="refreshKnowledge()" title="刷新">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M23 4v6h-6M1 20v-6h6"/>
                                     <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
                                 </svg>
                             </button>
-                            <button class="btn btn-sm" onclick="createNewDocument()">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <button class="btn-icon btn-primary" onclick="createNewDocument()" title="新建">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <line x1="12" y1="5" x2="12" y2="19"/>
                                     <line x1="5" y1="12" x2="19" y2="12"/>
                                 </svg>
-                                <span data-i18n="newDocument">新建</span>
                             </button>
                         </div>
                     </div>
@@ -630,7 +652,7 @@
             <div class="continuity-layout">
                 <!-- 左侧控制面板 -->
                 <aside class="continuity-controls">
-                    <h3 data-i18n="continuitySettings">连续性设置</h3>
+                    <h3 data-i18n="continuitySettings">接力设置</h3>
 
                     <!-- 项目选择 -->
                     <div>
@@ -693,7 +715,7 @@
                             <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
                             <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                         </svg>
-                        <h3 data-i18n="continuityEmpty">会话连续性引擎</h3>
+                        <h3 data-i18n="continuityEmpty">多会话接力引擎</h3>
                         <p data-i18n="continuityEmptyDesc">选择项目并点击"生成交接摘要"来分析最近的会话</p>
                     </div>
                 </main>

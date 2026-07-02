@@ -102,7 +102,7 @@ function renderDocItem(doc) {
                 <div class="doc-title">${escapeHtml(doc.name)}</div>
                 <div class="doc-meta">
                     <span class="doc-type">${doc.type === 'plans' ? 'Plan' : doc.type === 'claudemd' ? 'CLAUDE.md' : 'Memory'}</span>
-                    <span class="doc-time">${formatKnowledgeTime(doc.updatedAt)}</span>
+                    <span class="doc-time">${formatKnowledgeTime(doc.createdAt)}</span>
                 </div>
             </div>
         </div>
@@ -735,7 +735,7 @@ async function confirmCreateDoc() {
     }
 
     try {
-        const path = await window.go.main.App.CreateKnowledgeDocument(docType, '', '', selectedProject);
+        const path = await window.go.main.App.CreateKnowledgeDocument(docType, '', '', selectedProject, '');
         closeCreateDocModal();
         await loadKnowledgeDocuments(currentKnowledgeType);
         await selectKnowledgeDoc(path);
@@ -754,7 +754,7 @@ async function createMemoryForProject(project) {
     const docType = 'memory';
 
     try {
-        const path = await window.go.main.App.CreateKnowledgeDocument(docType, '', '', project);
+        const path = await window.go.main.App.CreateKnowledgeDocument(docType, '', '', project, '');
         await loadKnowledgeDocuments(currentKnowledgeType);
         await selectKnowledgeDoc(path);
         toggleKnowledgeEdit();

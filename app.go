@@ -1293,14 +1293,14 @@ func (a *App) RenameKnowledgeDocument(path string, newName string) error {
 }
 
 // CreateKnowledgeDocument 创建知识文档
-func (a *App) CreateKnowledgeDocument(docType string, title string, content string, project string) (string, error) {
+func (a *App) CreateKnowledgeDocument(docType string, title string, content string, project string, sessionId string) (string, error) {
 	if a.knowledge == nil {
 		return "", fmt.Errorf("知识管理引擎未初始化")
 	}
 
 	// 如果标题为空，让知识引擎自动生成默认标题
 	if title == "" {
-		return a.knowledge.CreateDocument(knowledge.DocType(docType), title, content, project)
+		return a.knowledge.CreateDocument(knowledge.DocType(docType), title, content, project, sessionId)
 	}
 
 	// 清理标题中的特殊字符（只允许字母、数字、空格、连字符、下划线）
@@ -1316,7 +1316,7 @@ func (a *App) CreateKnowledgeDocument(docType string, title string, content stri
 		return "", fmt.Errorf("title contains only invalid characters")
 	}
 
-	return a.knowledge.CreateDocument(knowledge.DocType(docType), cleanedTitle, content, project)
+	return a.knowledge.CreateDocument(knowledge.DocType(docType), cleanedTitle, content, project, sessionId)
 }
 
 // SearchKnowledgeDocuments 搜索知识文档
@@ -1504,7 +1504,7 @@ func (a *App) BatchUpdateCLAUDEMD(updates []CLAUDEMDBatchUpdate) (*BatchCLAUDEMD
 	}
 
 	for _, update := range updates {
-		_, err := a.knowledge.CreateDocument(knowledge.DocTypeClaudeMD, "CLAUDE.md", update.Content, update.Project)
+		_, err := a.knowledge.CreateDocument(knowledge.DocTypeClaudeMD, "CLAUDE.md", update.Content, update.Project, "")
 		if err != nil {
 			result.Failed++
 			result.Errors = append(result.Errors, fmt.Sprintf("%s: %v", update.Project, err))
@@ -1568,12 +1568,22 @@ type ContinuitySummary struct {
 	Project        string                      `json:"project"`
 	SessionsUsed   int                         `json:"sessionsUsed"`
 	SessionsTotal  int                         `json:"sessionsTotal"`
+	Summary        string                      `json:"summary"`
 	CompletedTasks []ContinuityTaskInfo        `json:"completedTasks"`
 	PendingTasks   []ContinuityPendingTaskInfo `json:"pendingTasks"`
 	KeyDecisions   []ContinuityDecisionInfo    `json:"keyDecisions"`
 	ModifiedFiles  []ContinuityFileInfo        `json:"modifiedFiles"`
 	KnownIssues    []string                    `json:"knownIssues"`
 	GeneratedAt    time.Time                   `json:"generatedAt"`
+	Quality        ContinuityQualityInfo       `json:"quality"`
+}
+
+// ContinuityQualityInfo 质量评分信息
+type ContinuityQualityInfo struct {
+	Completeness float64 `json:"completeness"`
+	Accuracy     float64 `json:"accuracy"`
+	Freshness    float64 `json:"freshness"`
+	OverallScore float64 `json:"overallScore"`
 }
 
 // GetContinuityProjects 获取所有有会话的项目列表
@@ -1659,12 +1669,19 @@ func (a *App) GenerateContinuityHandoff(project string, sessionCount int) (*Cont
 		Project:        summary.Project,
 		SessionsUsed:   summary.SessionsUsed,
 		SessionsTotal:  summary.SessionsTotal,
+		Summary:        summary.Summary,
 		CompletedTasks: completedTasks,
 		PendingTasks:   pendingTasks,
 		KeyDecisions:   keyDecisions,
 		ModifiedFiles:  modifiedFiles,
 		KnownIssues:    summary.KnownIssues,
 		GeneratedAt:    summary.GeneratedAt,
+		Quality: ContinuityQualityInfo{
+			Completeness: summary.Quality.Completeness,
+			Accuracy:     summary.Quality.Accuracy,
+			Freshness:    summary.Quality.Freshness,
+			OverallScore: summary.Quality.OverallScore,
+		},
 	}, nil
 }
 

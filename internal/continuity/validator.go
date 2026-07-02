@@ -171,6 +171,10 @@ func findGitRoot(startDir string) string {
 
 // pathsMatch 比较两个文件路径是否匹配
 func pathsMatch(gitPath, taskPath, gitRoot string) bool {
+	// 归一化路径分隔符
+	gitPath = normalizePath(gitPath)
+	taskPath = normalizePath(taskPath)
+
 	// 直接匹配
 	if gitPath == taskPath {
 		return true
@@ -179,12 +183,20 @@ func pathsMatch(gitPath, taskPath, gitRoot string) bool {
 	// 将任务路径转换为相对于 git root 的路径
 	if filepath.IsAbs(taskPath) {
 		relPath, err := filepath.Rel(gitRoot, taskPath)
-		if err == nil && relPath == gitPath {
+		if err == nil && normalizePath(relPath) == gitPath {
 			return true
 		}
 		// 也尝试匹配文件名
-		if filepath.Base(taskPath) == gitPath || filepath.Base(taskPath) == filepath.Base(gitPath) {
+		if filepath.Base(taskPath) == filepath.Base(gitPath) {
 			return true
+		}
+		// 匹配最后两级目录
+		parts := strings.Split(gitPath, string(filepath.Separator))
+		if len(parts) >= 2 {
+			lastTwo := strings.Join(parts[len(parts)-2:], string(filepath.Separator))
+			if strings.HasSuffix(taskPath, lastTwo) {
+				return true
+			}
 		}
 	} else {
 		// 任务路径是相对路径
@@ -195,9 +207,22 @@ func pathsMatch(gitPath, taskPath, gitRoot string) bool {
 		if filepath.Base(taskPath) == filepath.Base(gitPath) {
 			return true
 		}
+		// 匹配最后两级目录
+		parts := strings.Split(gitPath, string(filepath.Separator))
+		if len(parts) >= 2 {
+			lastTwo := strings.Join(parts[len(parts)-2:], string(filepath.Separator))
+			if strings.HasSuffix(taskPath, lastTwo) || strings.HasSuffix(gitPath, taskPath) {
+				return true
+			}
+		}
 	}
 
 	return false
+}
+
+// normalizePath 归一化路径分隔符为正斜杠
+func normalizePath(path string) string {
+	return strings.ReplaceAll(path, "\\", "/")
 }
 
 // GetSessionGitRoot 获取会话对应的 git 根目录

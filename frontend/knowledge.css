@@ -37,6 +37,38 @@
 .knowledge-sidebar .sidebar-actions {
     display: flex;
     gap: 4px;
+    align-items: center;
+}
+
+/* Icon-only button */
+.btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-icon:hover {
+    background: var(--border-hover);
+    color: var(--text-primary);
+}
+
+.btn-icon.btn-primary {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+}
+
+.btn-icon.btn-primary:hover {
+    opacity: 0.9;
 }
 
 /* Knowledge Search */

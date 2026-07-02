@@ -242,7 +242,7 @@ func (e *Engine) validatePath(path string) error {
 }
 
 // CreateDocument 创建新文档
-func (e *Engine) CreateDocument(docType DocType, title string, content string, project string) (string, error) {
+func (e *Engine) CreateDocument(docType DocType, title string, content string, project string, sessionId string) (string, error) {
 	var path string
 
 	// 如果 title 为空，生成默认标题
@@ -295,7 +295,7 @@ func (e *Engine) CreateDocument(docType DocType, title string, content string, p
 
 	// 如果没有提供内容，使用模板
 	if content == "" {
-		content = GenerateTemplate(docType, title)
+		content = GenerateTemplate(docType, title, sessionId)
 	}
 
 	// 保存文件

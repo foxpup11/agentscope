@@ -31,7 +31,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Silent refresh sessions every 2 minutes
     setInterval(silentRefreshSessions, 120000);
+
+    // Hide splash screen after app initialization
+    hideSplashScreen();
 });
+
+// ============================================
+// Splash Screen Control
+// ============================================
+function hideSplashScreen() {
+    const splashScreen = document.getElementById('splashScreen');
+    if (!splashScreen) return;
+
+    // Wait for animations to complete, then hide splash screen
+    setTimeout(() => {
+        splashScreen.classList.add('hidden');
+
+        // Remove splash screen from DOM after transition
+        setTimeout(() => {
+            splashScreen.remove();
+        }, 600);
+    }, 3000); // 3 seconds total splash duration
+}
 
 // ============================================
 // Tab Navigation
@@ -148,6 +169,7 @@ function renderSessionList(sessionData) {
                             <div class="session-meta">
                                 <span>${t('files')} ${session.fileCount}</span>
                                 <span>${t('actions')} ${session.actionCount}</span>
+                                <span class="session-time">${formatSessionTime(session.startedAt)}</span>
                             </div>
                         </div>
                     </div>
@@ -1028,3 +1050,36 @@ async function applyAutoTags() {
 // 更新 selectSession 函数以使用带元数据的版本
 const originalSelectSession = selectSession;
 selectSession = selectSessionWithMeta;
+
+// ============================================
+// Utility Functions (Additional)
+// ============================================
+
+// 格式化会话开始时间
+function formatSessionTime(timeStr) {
+    if (!timeStr) return '';
+    const date = new Date(timeStr);
+    const now = new Date();
+    const diff = now - date;
+
+    // 小于 1 小时
+    if (diff < 3600000) {
+        const minutes = Math.floor(diff / 60000);
+        return `${minutes || 1} ${t('minutesAgo') || '分钟前'}`;
+    }
+
+    // 小于 24 小时
+    if (diff < 86400000) {
+        const hours = Math.floor(diff / 3600000);
+        return `${hours} ${t('hoursAgo') || '小时前'}`;
+    }
+
+    // 小于 7 天
+    if (diff < 604800000) {
+        const days = Math.floor(diff / 86400000);
+        return `${days} ${t('daysAgo') || '天前'}`;
+    }
+
+    // 超过 7 天，显示日期
+    return date.toLocaleDateString();
+}

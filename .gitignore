@@ -69,13 +69,10 @@ docs/*
 
 # Wails 临时文件
 frontend/wailsjs/
-build/**/*.app
-build/**/*.dmg
-build/**/*.msi
 
 # node_modules
 node_modules/
 package-lock.json
 
 # 构建输出
-build/bin/
+build/

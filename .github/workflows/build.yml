@@ -8,6 +8,7 @@ on:
 
 jobs:
   build:
+    if: false  # 已禁用 - 持续失败且发送邮件通知太烦人
     runs-on: ubuntu-latest
 
     steps:

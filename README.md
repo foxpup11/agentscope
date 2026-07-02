@@ -215,17 +215,17 @@ AgentScope 运行在 Claude Code **外部**，这意味着：
 
 ## 预览
 
-(docs/images/preview0.png)
+![preview0](docs/images/preview0.png)
 
-(docs/images/preview1.png)
+![preview1](docs/images/preview1.png)
 
-(docs/images/preview2.png)
+![preview2](docs/images/preview2.png)
 
-(docs/images/preview3.png)
+![preview3](docs/images/preview3.png)
 
-(docs/images/preview4.png)
+![preview4](docs/images/preview4.png)
 
-(docs/images/preview5.png)
+![preview5](docs/images/preview5.png)
 
 ---
 
